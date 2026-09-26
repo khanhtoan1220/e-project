@@ -1,6 +1,6 @@
 const HoTro = require("../models/hoTro.model");
-const BanAn = require("../models/banAn.model"); // Import thêm Model Bàn để check trạng thái
-
+const BanAn = require("../models/banAn.model");
+const pusher = require("../config/pusher");
 exports.guiYeuCau = async (req, res) => {
   try {
     const { banId, loaiYeuCau, noiDung } = req.body;
@@ -21,6 +21,11 @@ exports.guiYeuCau = async (req, res) => {
       loaiYeuCau: loaiYeuCau,
       noiDung: noiDung,
       trangThai: "choXuLy",
+    });
+    pusher.trigger("nhan-vien-channel", "yeu-cau-moi", {
+      message: `Bàn [${ban.ten}] yêu cầu hỗ trợ: ${noiDung || loaiYeuCau}`,
+      banId: ban._id,
+      loaiYeuCau: loaiYeuCau,
     });
 
     res.status(201).json({

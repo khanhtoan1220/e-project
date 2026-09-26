@@ -1,8 +1,9 @@
 const BanAn = require("../models/banAn.model");
 const HoaDon = require("../models/hoaDon.model");
 const Menu = require("../models/menu.model");
-const pusher = require("../config/pusher");
+const pusher = require("../config/pusher"); // 1. Import Pusher
 
+// 1. Lấy sơ đồ bàn
 exports.laySoDoBan = async (req, res) => {
   try {
     const list = await BanAn.find().populate("hoaDon").exec();
@@ -12,6 +13,7 @@ exports.laySoDoBan = async (req, res) => {
   }
 };
 
+// 2. Mở bàn
 exports.moBan = async (req, res) => {
   try {
     const { banId } = req.body;
@@ -37,20 +39,50 @@ exports.moBan = async (req, res) => {
   }
 };
 
+// 3. Gọi món
 exports.goiMon = async (req, res) => {
   try {
     const { hoaDonId, chonMon } = req.body;
-    const hoaDon = await HoaDon.findById(hoaDonId).populate("banId").exec(); // Thêm populate banId
+    // Thêm .populate("banId") để lấy tên bàn bắn thông báo
+    const hoaDon = await HoaDon.findById(hoaDonId).populate("banId").exec();
 
-    if (!hoaDon)
+    if (!hoaDon) {
       return res.status(404).json({ message: "Không tìm thấy hóa đơn" });
+    }
 
     if (hoaDon.banId.trangThai !== "dangSuDung") {
       return res.status(403).json({
         message:
-          "Bàn này hiện chưa mở hoặc đang đợi dọn dẹp, không thể gọi món!",
+          "Bàn này hiện chưa mở hoặc đang chờ dọn dẹp, không thể gọi món!",
       });
     }
+
+    for (let item of chonMon) {
+      const monDetails = await Menu.findById(item.menuId).exec();
+      if (monDetails) {
+        hoaDon.danhSachMon.push({
+          menuId: item.menuId,
+          ten: monDetails.ten,
+          gia: monDetails.gia,
+          soLuong: item.soLuong,
+          ghiChu: item.ghiChu,
+          trangThaiMon: "choXacNhan",
+        });
+      }
+    }
+
+    hoaDon.tongTien = hoaDon.danhSachMon.reduce(
+      (sum, mon) => sum + mon.gia * mon.soLuong,
+      0,
+    );
+    const updatedHoaDon = await hoaDon.save();
+
+    pusher.trigger("bep-channel", "co-don-moi", {
+      message: `Bàn [${hoaDon.banId.ten}] vừa gửi yêu cầu gọi thêm món mới!`,
+      hoaDonId: hoaDon._id,
+    });
+
+    res.json(updatedHoaDon);
   } catch (error) {
     res.status(400).json({ message: error.message });
   }
@@ -74,6 +106,7 @@ exports.getHoaDonTheoBan = async (req, res) => {
   }
 };
 
+// 5. Thanh toán
 exports.thanhToan = async (req, res) => {
   try {
     const { hoaDonId } = req.body;
@@ -88,32 +121,17 @@ exports.thanhToan = async (req, res) => {
         trangThai: "choDonDep",
         hoaDon: null,
       });
+
+      // (Tùy chọn) Bắn thông báo dọn dẹp cho phục vụ
+      pusher.trigger("nhan-vien-channel", "yeu-cau-don-ban", {
+        message: `Khách đã thanh toán, vui lòng dọn dẹp bàn!`,
+        banId: hoaDon.banId,
+      });
+
       res.json({ message: "Thanh toán thành công", hoaDon });
     } else {
       res.status(404).json({ message: "Hóa đơn không tồn tại" });
     }
-  } catch (error) {
-    res.status(400).json({ message: error.message });
-  }
-};
-
-exports.hoanTatDonBan = async (req, res) => {
-  try {
-    const idBan = req.params.id;
-    const ban = await BanAn.findById(idBan).exec();
-
-    if (!ban) return res.status(404).json({ message: "Không tìm thấy bàn" });
-
-    if (ban.trangThai !== "choDonDep") {
-      return res
-        .status(400)
-        .json({ message: "Bàn này hiện không cần dọn dẹp" });
-    }
-
-    ban.trangThai = "trong";
-    await ban.save();
-
-    res.json({ message: "Bàn đã dọn xong và sẵn sàng đón khách", data: ban });
   } catch (error) {
     res.status(400).json({ message: error.message });
   }
