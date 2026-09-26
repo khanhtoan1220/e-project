@@ -1,3 +1,4 @@
+const pusher = require("../config/pusher");
 const HoaDon = require("../models/hoaDon.model");
 const Menu = require("../models/menu.model");
 const NguyenLieu = require("../models/nguyenLieu.model");
@@ -5,7 +6,7 @@ const NguyenLieu = require("../models/nguyenLieu.model");
 exports.getMonCho = async (req, res) => {
   try {
     const dsHoaDon = await HoaDon.find({ trangThai: "chuaThanhToan" }).exec();
-    let monCho = [];
+    const monCho = [];
     dsHoaDon.forEach((hd) => {
       hd.danhSachMon.forEach((mon) => {
         if (mon.trangThaiMon !== "daPhucVu" && mon.trangThaiMon !== "daHuy") {
@@ -33,15 +34,20 @@ exports.updateTrangThaiMon = async (req, res) => {
     if (trangThaiMoi === "daXong") {
       const monChinh = await Menu.findById(monItem.menuId).exec();
       if (monChinh && monChinh.dinhLuong) {
-        for (let dl of monChinh.dinhLuong) {
+        for (const dl of monChinh.dinhLuong) {
           await NguyenLieu.findByIdAndUpdate(dl.nguyenLieuID, {
             $inc: { soLuongTon: -(dl.soLuong * monItem.soLuong) },
           });
         }
       }
     }
+
     await hoaDon.save();
     res.json({ message: "Cập nhật thành công" });
+    pusher.trigger("kenh-nhan-vien", "mon-da-xong", {
+      messsage: "Món đã nấu xong",
+      banId: hoaDon.banId,
+    });
   } catch (error) {
     res.status(400).json({ message: error.message });
   }

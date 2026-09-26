@@ -1,2 +1,13 @@
-node_modules
-package-lock.json
+# Backend
+backend/node_modules/
+backend/.env
+
+# Frontend
+frontend/node_modules/
+frontend/dist/
+frontend/.env
+frontend/.DS_Store
+
+# Thư mục hệ thống
+.DS_Store
+Thumbs.db

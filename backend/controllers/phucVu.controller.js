@@ -1,6 +1,7 @@
 const BanAn = require("../models/banAn.model");
 const HoaDon = require("../models/hoaDon.model");
 const Menu = require("../models/menu.model");
+const pusher = require("../config/pusher");
 
 exports.laySoDoBan = async (req, res) => {
   try {
@@ -44,7 +45,6 @@ exports.goiMon = async (req, res) => {
     if (!hoaDon)
       return res.status(404).json({ message: "Không tìm thấy hóa đơn" });
 
-    // --- BƯỚC CHẶN QUAN TRỌNG ---
     if (hoaDon.banId.trangThai !== "dangSuDung") {
       return res.status(403).json({
         message:
