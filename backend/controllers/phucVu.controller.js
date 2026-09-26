@@ -136,3 +136,26 @@ exports.thanhToan = async (req, res) => {
     res.status(400).json({ message: error.message });
   }
 };
+exports.hoanTatDonBan = async (req, res) => {
+  try {
+    const idBan = req.params.id;
+    const ban = await BanAn.findById(idBan).exec();
+
+    if (!ban) {
+      return res.status(404).json({ message: "Không tìm thấy bàn dọn dẹp" });
+    }
+
+    if (ban.trangThai !== "choDonDep") {
+      return res
+        .status(400)
+        .json({ message: "Bàn này hiện không ở trạng thái chờ dọn dẹp" });
+    }
+
+    ban.trangThai = "trong";
+    await ban.save();
+
+    res.json({ message: "Dọn dẹp bàn thành công, bàn đã trống", data: ban });
+  } catch (error) {
+    res.status(400).json({ message: error.message });
+  }
+};
