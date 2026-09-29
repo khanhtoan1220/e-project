@@ -159,3 +159,65 @@ exports.hoanTatDonBan = async (req, res) => {
     res.status(400).json({ message: error.message });
   }
 };
+
+// 7. Chuyển bàn
+exports.chuyenBan = async (req, res) => {
+  try {
+    const { banCuId, banMoiId } = req.body;
+
+    if (banCuId === banMoiId) {
+      return res
+        .status(400)
+        .json({ message: "Bàn mới phải khác bàn hiện tại" });
+    }
+
+    const [banCu, banMoi] = await Promise.all([
+      BanAn.findById(banCuId),
+      BanAn.findById(banMoiId),
+    ]);
+
+    if (!banCu || !banMoi) {
+      return res.status(404).json({ message: "Không tìm thấy bàn cần chuyển" });
+    }
+
+    if (banCu.trangThai !== "dangSuDung" || !banCu.hoaDon) {
+      return res
+        .status(400)
+        .json({ message: "Bàn cũ hiện không có khách đang sử dụng" });
+    }
+
+    if (banMoi.trangThai !== "trong") {
+      return res
+        .status(400)
+        .json({ message: "Bàn chuyển đến không còn trống" });
+    }
+
+    const hoaDonId = banCu.hoaDon;
+
+    // Cập nhật hóa đơn sang bàn mới
+    await HoaDon.findByIdAndUpdate(hoaDonId, { banId: banMoiId });
+
+    // Cập nhật trạng thái bàn mới
+    banMoi.trangThai = "dangSuDung";
+    banMoi.hoaDon = hoaDonId;
+    await banMoi.save();
+
+    // Giải phóng bàn cũ
+    banCu.trangThai = "trong";
+    banCu.hoaDon = null;
+    await banCu.save();
+
+    pusher.trigger("nhan-vien-channel", "chuyen-ban", {
+      message: `Đã chuyển từ [${banCu.ten}] sang [${banMoi.ten}]`,
+      banCuId,
+      banMoiId,
+    });
+
+    res.json({
+      message: `Chuyển từ bàn [${banCu.ten}] sang bàn [${banMoi.ten}] thành công`,
+      banMoi,
+    });
+  } catch (error) {
+    res.status(400).json({ message: error.message });
+  }
+};

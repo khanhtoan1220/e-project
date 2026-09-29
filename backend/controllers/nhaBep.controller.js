@@ -29,9 +29,11 @@ exports.updateTrangThaiMon = async (req, res) => {
     const monItem = hoaDon.danhSachMon.id(monItemObjectId);
     if (!monItem) return res.status(404).json({ message: "Không thấy món" });
 
+    const trangThaiCu = monItem.trangThaiMon;
     monItem.trangThaiMon = trangThaiMoi;
 
-    if (trangThaiMoi === "daXong") {
+    // 1. Nếu chuyển sang daXong (mà trước đó chưa xong) -> Trừ kho nguyên liệu
+    if (trangThaiMoi === "daXong" && trangThaiCu !== "daXong") {
       const monChinh = await Menu.findById(monItem.menuId).exec();
       if (monChinh && monChinh.dinhLuong) {
         for (const dl of monChinh.dinhLuong) {
@@ -42,11 +44,24 @@ exports.updateTrangThaiMon = async (req, res) => {
       }
     }
 
+    // 2. Nếu món bị hủy (daHuy) mà trước đó đã nấu xong (daXong) -> Hoàn lại kho nguyên liệu
+    if (trangThaiMoi === "daHuy" && trangThaiCu === "daXong") {
+      const monChinh = await Menu.findById(monItem.menuId).exec();
+      if (monChinh && monChinh.dinhLuong) {
+        for (const dl of monChinh.dinhLuong) {
+          await NguyenLieu.findByIdAndUpdate(dl.nguyenLieuID, {
+            $inc: { soLuongTon: dl.soLuong * monItem.soLuong },
+          });
+        }
+      }
+    }
+
     await hoaDon.save();
     res.json({ message: "Cập nhật thành công" });
-    pusher.trigger("kenh-nhan-vien", "mon-da-xong", {
-      messsage: "Món đã nấu xong",
+    pusher.trigger("nhan-vien-channel", "mon-da-xong", {
+      message: `Món "${monItem.ten}" đã nấu xong`,
       banId: hoaDon.banId,
+      hoaDonId: hoaDon._id,
     });
   } catch (error) {
     res.status(400).json({ message: error.message });

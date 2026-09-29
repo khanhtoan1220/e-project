@@ -48,5 +48,11 @@ router.patch(
   checkRole(["admin", "phucVu"]),
   phucVuController.hoanTatDonBan,
 );
+router.post(
+  "/chuyen-ban",
+  checkAuth,
+  checkRole(["admin", "phucVu"]),
+  phucVuController.chuyenBan,
+);
 
 module.exports = router;

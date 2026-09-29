@@ -15,7 +15,59 @@ exports.khachDatBan = async (req, res) => {
 
 exports.getAll = async (req, res) => {
   try {
-    const list = await DatBan.find().sort({ thoiGianDat: 1 }).exec();
+    const { search, q, trangThai, ngay, page, limit, all } = req.query;
+    let filter = {};
+
+    // 1. Tìm kiếm theo tên hoặc SĐT khách
+    const keyword = search || q;
+    if (keyword && keyword.trim() !== "") {
+      filter.$or = [
+        { tenKhach: { $regex: keyword.trim(), $options: "i" } },
+        { soDienThoai: { $regex: keyword.trim(), $options: "i" } },
+      ];
+    }
+
+    // 2. Lọc theo trạng thái
+    if (trangThai) {
+      filter.trangThai = trangThai;
+    }
+
+    // 3. Lọc theo ngày hẹn đặt bàn (YYYY-MM-DD)
+    if (ngay) {
+      const start = new Date(ngay);
+      start.setHours(0, 0, 0, 0);
+      const end = new Date(ngay);
+      end.setHours(23, 59, 59, 999);
+      filter.thoiGianDat = { $gte: start, $lte: end };
+    }
+
+    // 4. Phân trang nếu có truyền page
+    if (page && all !== "true") {
+      const currentPage = Math.max(1, parseInt(page) || 1);
+      const currentLimit = Math.max(1, parseInt(limit) || 10);
+      const skip = (currentPage - 1) * currentLimit;
+
+      const [total, list] = await Promise.all([
+        DatBan.countDocuments(filter),
+        DatBan.find(filter)
+          .sort({ thoiGianDat: -1 })
+          .skip(skip)
+          .limit(currentLimit)
+          .exec(),
+      ]);
+
+      return res.json({
+        data: list,
+        pagination: {
+          total,
+          page: currentPage,
+          limit: currentLimit,
+          totalPages: Math.ceil(total / currentLimit),
+        },
+      });
+    }
+
+    const list = await DatBan.find(filter).sort({ thoiGianDat: -1 }).exec();
     res.json(list);
   } catch (error) {
     res.status(400).json({ message: error.message });

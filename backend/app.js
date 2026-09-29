@@ -32,8 +32,18 @@ app.use(
 app.use(express.static("public"));
 app.use("/api", require("./routes/router"));
 
+// Xử lý 404
 app.use((req, res) => {
   res.status(404).json({ message: "Đường dẫn không tồn tại" });
+});
+
+// Global error handler
+app.use((err, req, res, next) => {
+  console.error("Lỗi máy chủ:", err.stack || err);
+  res.status(err.status || 500).json({
+    status: false,
+    message: err.message || "Đã có lỗi nội bộ từ máy chủ",
+  });
 });
 
 module.exports = app;
