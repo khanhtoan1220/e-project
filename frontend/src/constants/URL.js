@@ -15,8 +15,10 @@ const URL = {
   MON_AN_DETAIL: (id) => `/thuc-don/mon-an/${id}`,
 
   // Quản lý kho nguyên liệu
-  KHO: "/quan-tri/kho"
-  
+  KHO: "/quan-tri/kho",
+BAN_AN: "/quan-tri/ban-an",
+DAT_BAN: "/quan-tri/dat-ban",
+HOA_DON: "/quan-tri/hoa-don"
 
   
 };
