@@ -14,6 +14,9 @@ import {
 import apiClient from "../utils/api";
 import URL from "../constants/URL";
 
+const getErrorMessage = (err) =>
+  err.response?.data?.message || "Đã xảy ra lỗi. Vui lòng thử lại.";
+
 export default function KhoNguyenLieu() {
   const [list, setList] = useState([]);
   const [loading, setLoading] = useState(true);
@@ -48,7 +51,7 @@ export default function KhoNguyenLieu() {
       const res = await apiClient.get(URL.KHO, { params });
       setList(res.data || []);
     } catch (err) {
-      setError(err.toString());
+      setError(getErrorMessage(err));
     } finally {
       setLoading(false);
     }
@@ -76,7 +79,7 @@ export default function KhoNguyenLieu() {
     setIsEditMode(true);
     setEditingId(item._id);
     setTen(item.ten);
-    setDonViTinh(item.donViTinh);
+    setDonViTinh(item.donVi);
     setSoLuongTon(item.soLuongTon);
     setShowModal(true);
   };
@@ -88,7 +91,7 @@ export default function KhoNguyenLieu() {
     
     const data = {
       ten,
-      donViTinh,
+      donVi: donViTinh,
       soLuongTon: Number(soLuongTon)
     };
 
@@ -103,7 +106,7 @@ export default function KhoNguyenLieu() {
       setShowModal(false);
       loadData();
     } catch (err) {
-      setError(err.toString());
+      setError(getErrorMessage(err));
     }
   };
 
@@ -129,13 +132,13 @@ export default function KhoNguyenLieu() {
         soLuongThem: Number(soLuongThem)
       });
 
-      setMsg(`Đã nhập thêm +${soLuongThem} ${selectedIngredient.donViTinh} cho nguyên liệu ${selectedIngredient.ten}!`);
+      setMsg(`Đã nhập thêm +${soLuongThem} ${selectedIngredient.donVi} cho nguyên liệu ${selectedIngredient.ten}!`);
       setShowNhapKhoModal(false);
       setSelectedIngredient(null);
       setSoLuongThem("");
       loadData();
     } catch (err) {
-      setError(err.toString());
+      setError(getErrorMessage(err));
     }
   };
 
@@ -148,7 +151,7 @@ export default function KhoNguyenLieu() {
         setMsg("Xóa nguyên liệu khỏi kho thành công!");
         loadData();
       } catch (err) {
-        setError(err.toString());
+        setError(getErrorMessage(err));
       }
     }
   };
@@ -257,7 +260,7 @@ export default function KhoNguyenLieu() {
                   <tr key={item._id}>
                     <td className="px-4 py-3 text-secondary">{idx + 1}</td>
                     <td className="py-3 fw-bold text-dark">{item.ten}</td>
-                    <td className="py-3">{item.donViTinh}</td>
+                    <td className="py-3">{item.donVi}</td>
                     <td className="py-3 fw-bold text-primary">{item.soLuongTon}</td>
                     <td className="py-3">{renderStatusBadge(item.soLuongTon)}</td>
                     <td className="py-3 text-end px-4">
@@ -356,11 +359,11 @@ export default function KhoNguyenLieu() {
                 Nguyên liệu: <strong className="text-primary">{selectedIngredient.ten}</strong>
               </p>
               <p className="mb-3 text-secondary">
-                Tồn kho hiện tại: <strong>{selectedIngredient.soLuongTon} {selectedIngredient.donViTinh}</strong>
+                Tồn kho hiện tại: <strong>{selectedIngredient.soLuongTon} {selectedIngredient.donVi}</strong>
               </p>
               
               <Form.Group className="mb-3">
-                <Form.Label className="fw-semibold text-dark">Số lượng cần nhập thêm ({selectedIngredient.donViTinh})</Form.Label>
+                <Form.Label className="fw-semibold text-dark">Số lượng cần nhập thêm ({selectedIngredient.donVi})</Form.Label>
                 <Form.Control
                   type="number"
                   step="any"
