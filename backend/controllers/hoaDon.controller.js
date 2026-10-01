@@ -1,23 +1,19 @@
 const HoaDon = require("../models/hoaDon.model");
 const BanAn = require("../models/banAn.model");
 
-// 1. Lấy danh sách hóa đơn (Admin/Quản lý) có tìm kiếm, lọc & phân trang
 exports.getAll = async (req, res) => {
   try {
     const { trangThai, banId, tuNgay, denNgay, page, limit, all } = req.query;
     let filter = {};
 
-    // Lọc theo trạng thái
     if (trangThai) {
       filter.trangThai = trangThai;
     }
 
-    // Lọc theo bàn
     if (banId) {
       filter.banId = banId;
     }
 
-    // Lọc theo khoảng ngày (YYYY-MM-DD)
     if (tuNgay || denNgay) {
       filter.createdAt = {};
       if (tuNgay) {
@@ -32,7 +28,6 @@ exports.getAll = async (req, res) => {
       }
     }
 
-    // Phân trang
     if (page && all !== "true") {
       const currentPage = Math.max(1, parseInt(page) || 1);
       const currentLimit = Math.max(1, parseInt(limit) || 10);
@@ -69,7 +64,6 @@ exports.getAll = async (req, res) => {
   }
 };
 
-// 2. Lấy chi tiết hóa đơn
 exports.getDetail = async (req, res) => {
   try {
     const hoaDon = await HoaDon.findById(req.params.id)
@@ -86,7 +80,6 @@ exports.getDetail = async (req, res) => {
   }
 };
 
-// 3. Hủy hóa đơn (Admin)
 exports.huyHoaDon = async (req, res) => {
   try {
     const hoaDon = await HoaDon.findById(req.params.id).exec();
@@ -103,7 +96,6 @@ exports.huyHoaDon = async (req, res) => {
     hoaDon.trangThai = "daHuy";
     await hoaDon.save();
 
-    // Chuyển bàn về trạng thái trống
     await BanAn.findByIdAndUpdate(hoaDon.banId, { trangThai: "trong" });
 
     res.json({

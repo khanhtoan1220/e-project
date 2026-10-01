@@ -1,13 +1,11 @@
 const HoaDon = require("../models/hoaDon.model");
 const NguyenLieu = require("../models/nguyenLieu.model");
 
-// 1. Thống kê Doanh thu & Lượt khách (Theo tháng/năm hoặc Tất cả thời gian)
 exports.getDoanhThuChung = async (req, res) => {
   try {
-    const { thang, nam } = req.query; // Nhận tham số lọc ?thang=X&nam=Y
+    const { thang, nam } = req.query;
     let filter = { trangThai: "daThanhToan" }; // Chỉ tính hóa đơn đã thanh toán
 
-    // Nếu có truyền cả tháng và năm thì tạo khoảng lọc thời gian
     if (thang && nam) {
       const ngayBatDau = new Date(nam, thang - 1, 1);
       const ngayKetThuc = new Date(nam, thang, 0, 23, 59, 59); // Ngày cuối cùng của tháng
@@ -26,7 +24,6 @@ exports.getDoanhThuChung = async (req, res) => {
       },
     ]).exec();
 
-    // Trả về kết quả, nếu rỗng thì trả về mặc định bằng 0
     res.json(
       thongKe[0] || {
         tongDoanhThu: 0,
@@ -39,7 +36,6 @@ exports.getDoanhThuChung = async (req, res) => {
   }
 };
 
-// 2. Thống kê món bán chạy hoặc bán ế
 exports.getXepHangMon = async (req, res) => {
   try {
     const { kieu } = req.query; // Nhận tham số ?kieu=banchay hoặc ?kieu=bane
@@ -58,7 +54,7 @@ exports.getXepHangMon = async (req, res) => {
         },
       },
       { $sort: { soLuongDaBan: sapXep } },
-      { $limit: 10 }, // Lấy top 10
+      { $limit: 10 },
     ]).exec();
 
     res.json(list);
@@ -67,7 +63,6 @@ exports.getXepHangMon = async (req, res) => {
   }
 };
 
-// 3. Cảnh báo kho nguyên liệu sắp hết (Số lượng tồn < 10)
 exports.getCanhBaoKho = async (req, res) => {
   try {
     const list = await NguyenLieu.find({ soLuongTon: { $lt: 10 } }).exec();

@@ -32,7 +32,6 @@ exports.updateTrangThaiMon = async (req, res) => {
     const trangThaiCu = monItem.trangThaiMon;
     monItem.trangThaiMon = trangThaiMoi;
 
-    // 1. Nếu chuyển sang daXong (mà trước đó chưa xong) -> Trừ kho nguyên liệu
     if (trangThaiMoi === "daXong" && trangThaiCu !== "daXong") {
       const monChinh = await Menu.findById(monItem.menuId).exec();
       if (monChinh && monChinh.dinhLuong) {
@@ -44,7 +43,6 @@ exports.updateTrangThaiMon = async (req, res) => {
       }
     }
 
-    // 2. Nếu món bị hủy (daHuy) mà trước đó đã nấu xong (daXong) -> Hoàn lại kho nguyên liệu
     if (trangThaiMoi === "daHuy" && trangThaiCu === "daXong") {
       const monChinh = await Menu.findById(monItem.menuId).exec();
       if (monChinh && monChinh.dinhLuong) {

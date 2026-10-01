@@ -4,7 +4,6 @@ const path = require("path");
 
 const fileRouter = express.Router();
 
-// cấu hình lưu file
 const storage = multer.diskStorage({
   destination: (req, file, cb) => {
     cb(null, "public/uploads"); // chỉ định nơi lưu file

@@ -5,13 +5,11 @@ exports.getAll = async (req, res) => {
     const { search, q, tinhTrang, sort, page, limit, all } = req.query;
     let filter = {};
 
-    // 1. Tìm kiếm theo tên nguyên liệu
     const keyword = search || q;
     if (keyword && keyword.trim() !== "") {
       filter.ten = { $regex: keyword.trim(), $options: "i" };
     }
 
-    // 2. Lọc theo tình trạng tồn kho
     if (tinhTrang === "hetHang") {
       filter.soLuongTon = { $lte: 0 };
     } else if (tinhTrang === "sapHet") {
@@ -21,13 +19,12 @@ exports.getAll = async (req, res) => {
     }
 
     // 3. Sắp xếp
-    let sortOption = { ten: 1 }; // Mặc định theo tên A-Z
+    let sortOption = { ten: 1 };
     if (sort === "ton_asc") sortOption = { soLuongTon: 1 };
     else if (sort === "ton_desc") sortOption = { soLuongTon: -1 };
     else if (sort === "ten_desc") sortOption = { ten: -1 };
     else if (sort === "moi_nhat") sortOption = { createdAt: -1 };
 
-    // 4. Phân trang
     if (page && all !== "true") {
       const currentPage = Math.max(1, parseInt(page) || 1);
       const currentLimit = Math.max(1, parseInt(limit) || 10);

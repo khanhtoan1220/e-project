@@ -28,7 +28,6 @@ router.post("/register", nguoiDungController.dangKy);
 router.get("/dat-ban", datBanController.getAll);
 router.patch("/dat-ban/:id", datBanController.updateStatus);
 
-// Quản lý hóa đơn
 router.get("/hoa-don", hoaDonController.getAll);
 router.get("/hoa-don/:id", hoaDonController.getDetail);
 router.patch("/hoa-don/:id/huy", hoaDonController.huyHoaDon);
