@@ -62,7 +62,6 @@ exports.dangNhap = async (req, res) => {
   }
 };
 
-// Lấy thông tin user hiện tại qua Session (dùng cho Frontend khi F5)
 exports.getProfile = async (req, res) => {
   try {
     if (!req.session || !req.session.user) {
@@ -80,7 +79,6 @@ exports.getProfile = async (req, res) => {
   }
 };
 
-// Quản lý nhân viên (Dành cho Admin)
 exports.getAllNhanVien = async (req, res) => {
   try {
     const { search, vaiTro } = req.query;
@@ -106,7 +104,6 @@ exports.getAllNhanVien = async (req, res) => {
   }
 };
 
-// Xóa nhân viên
 exports.xoaNhanVien = async (req, res) => {
   try {
     const { id } = req.params;
@@ -125,7 +122,6 @@ exports.xoaNhanVien = async (req, res) => {
   }
 };
 
-// Đổi mật khẩu cá nhân (Người dùng đang đăng nhập)
 exports.doiMatKhau = async (req, res) => {
   try {
     const { matKhauCu, matKhauMoi } = req.body;
@@ -161,7 +157,6 @@ exports.doiMatKhau = async (req, res) => {
   }
 };
 
-// Admin đặt lại mật khẩu cho nhân viên
 exports.resetMatKhau = async (req, res) => {
   try {
     const { id } = req.params;

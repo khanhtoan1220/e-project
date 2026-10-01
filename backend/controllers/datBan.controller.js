@@ -18,7 +18,6 @@ exports.getAll = async (req, res) => {
     const { search, q, trangThai, ngay, page, limit, all } = req.query;
     let filter = {};
 
-    // 1. Tìm kiếm theo tên hoặc SĐT khách
     const keyword = search || q;
     if (keyword && keyword.trim() !== "") {
       filter.$or = [
@@ -27,12 +26,10 @@ exports.getAll = async (req, res) => {
       ];
     }
 
-    // 2. Lọc theo trạng thái
     if (trangThai) {
       filter.trangThai = trangThai;
     }
 
-    // 3. Lọc theo ngày hẹn đặt bàn (YYYY-MM-DD)
     if (ngay) {
       const start = new Date(ngay);
       start.setHours(0, 0, 0, 0);
@@ -41,7 +38,6 @@ exports.getAll = async (req, res) => {
       filter.thoiGianDat = { $gte: start, $lte: end };
     }
 
-    // 4. Phân trang nếu có truyền page
     if (page && all !== "true") {
       const currentPage = Math.max(1, parseInt(page) || 1);
       const currentLimit = Math.max(1, parseInt(limit) || 10);

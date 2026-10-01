@@ -3,7 +3,6 @@ const HoaDon = require("../models/hoaDon.model");
 const Menu = require("../models/menu.model");
 const pusher = require("../config/pusher"); // 1. Import Pusher
 
-// 1. Lấy sơ đồ bàn
 exports.laySoDoBan = async (req, res) => {
   try {
     const list = await BanAn.find().populate("hoaDon").exec();
@@ -13,7 +12,6 @@ exports.laySoDoBan = async (req, res) => {
   }
 };
 
-// 2. Mở bàn
 exports.moBan = async (req, res) => {
   try {
     const { banId } = req.body;
@@ -39,11 +37,10 @@ exports.moBan = async (req, res) => {
   }
 };
 
-// 3. Gọi món
 exports.goiMon = async (req, res) => {
   try {
     const { hoaDonId, chonMon } = req.body;
-    // Thêm .populate("banId") để lấy tên bàn bắn thông báo
+
     const hoaDon = await HoaDon.findById(hoaDonId).populate("banId").exec();
 
     if (!hoaDon) {
@@ -106,7 +103,6 @@ exports.getHoaDonTheoBan = async (req, res) => {
   }
 };
 
-// 5. Thanh toán
 exports.thanhToan = async (req, res) => {
   try {
     const { hoaDonId } = req.body;
@@ -122,7 +118,6 @@ exports.thanhToan = async (req, res) => {
         hoaDon: null,
       });
 
-      // (Tùy chọn) Bắn thông báo dọn dẹp cho phục vụ
       pusher.trigger("nhan-vien-channel", "yeu-cau-don-ban", {
         message: `Khách đã thanh toán, vui lòng dọn dẹp bàn!`,
         banId: hoaDon.banId,
@@ -160,7 +155,6 @@ exports.hoanTatDonBan = async (req, res) => {
   }
 };
 
-// 7. Chuyển bàn
 exports.chuyenBan = async (req, res) => {
   try {
     const { banCuId, banMoiId } = req.body;
@@ -194,15 +188,12 @@ exports.chuyenBan = async (req, res) => {
 
     const hoaDonId = banCu.hoaDon;
 
-    // Cập nhật hóa đơn sang bàn mới
     await HoaDon.findByIdAndUpdate(hoaDonId, { banId: banMoiId });
 
-    // Cập nhật trạng thái bàn mới
     banMoi.trangThai = "dangSuDung";
     banMoi.hoaDon = hoaDonId;
     await banMoi.save();
 
-    // Giải phóng bàn cũ
     banCu.trangThai = "trong";
     banCu.hoaDon = null;
     await banCu.save();

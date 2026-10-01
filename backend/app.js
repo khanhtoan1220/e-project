@@ -23,7 +23,7 @@ app.use(
     resave: false,
     saveUninitialized: true,
     cookie: {
-      maxAge: 1000 * 60 * 60, // 1 hour
+      maxAge: 1000 * 60 * 60,
       httpOnly: true,
       secure: false,
     },
@@ -32,12 +32,10 @@ app.use(
 app.use(express.static("public"));
 app.use("/api", require("./routes/router"));
 
-// Xử lý 404
 app.use((req, res) => {
   res.status(404).json({ message: "Đường dẫn không tồn tại" });
 });
 
-// Global error handler
 app.use((err, req, res, next) => {
   console.error("Lỗi máy chủ:", err.stack || err);
   res.status(err.status || 500).json({
