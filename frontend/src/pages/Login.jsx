@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from "react";
+import { useState, useEffect } from "react";
 import { Card, Form, Button, Container, Alert, Spinner } from "react-bootstrap";
 import { useNavigate } from "react-router-dom";
 import { login_service } from "../services/auth_service";

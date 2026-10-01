@@ -19,10 +19,12 @@ import {
   update_status_monan_service,
   get_danhmuc_service
 } from "../services/quantri_service";
+import apiClient from "../utils/api";
 
 export default function MonAn() {
   const [list, setList] = useState([]);
   const [danhMucList, setDanhMucList] = useState([]);
+  const [nguyenLieuList, setNguyenLieuList] = useState([]); // Lấy từ kho phục vụ cho Định Lượng
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
   const [msg, setMsg] = useState("");
@@ -32,7 +34,7 @@ export default function MonAn() {
   const [danhMucFilter, setDanhMucFilter] = useState("");
   const [conBanFilter, setConBanFilter] = useState("");
 
-  // State Modal (Thêm & Sửa dùng chung form nhưng khác chế độ)
+  // State Modal
   const [showModal, setShowModal] = useState(false);
   const [isEditMode, setIsEditMode] = useState(false);
   const [editingId, setEditingId] = useState(null);
@@ -43,25 +45,29 @@ export default function MonAn() {
   const [hinhAnh, setHinhAnh] = useState("");
   const [danhMucId, setDanhMucId] = useState("");
   const [conBan, setConBan] = useState(true);
+  
+  // State Định Lượng [{ nguyenLieuID, soLuong, donVi }]
+  const [dinhLuong, setDinhLuong] = useState([]);
 
   const loadData = async () => {
     try {
       setLoading(true);
       setError("");
       
-      // Xây dựng bộ lọc cho params
       const filters = { all: "true" };
       if (search) filters.search = search;
       if (danhMucFilter) filters.danhMuc = danhMucFilter;
       if (conBanFilter !== "") filters.conBan = conBanFilter;
 
-      const [monAnData, danhmucData] = await Promise.all([
+      const [monAnData, danhmucData, khoData] = await Promise.all([
         get_monan_service(filters),
-        get_danhmuc_service()
+        get_danhmuc_service(),
+        apiClient.get("/quan-tri/kho") // Gọi API kho
       ]);
 
       setList(monAnData);
       setDanhMucList(danhmucData);
+      setNguyenLieuList(khoData.data || []);
     } catch (err) {
       setError(err.toString());
     } finally {
@@ -71,7 +77,7 @@ export default function MonAn() {
 
   useEffect(() => {
     loadData();
-  }, [danhMucFilter, conBanFilter]); // Lọc lập tức khi đổi danh mục hoặc trạng thái còn bán
+  }, [danhMucFilter, conBanFilter]);
 
   const handleSearchSubmit = (e) => {
     e.preventDefault();
@@ -86,10 +92,11 @@ export default function MonAn() {
     setHinhAnh("");
     setDanhMucId(danhMucList[0]?._id || "");
     setConBan(true);
+    setDinhLuong([]); // Reset định lượng rỗng khi thêm mới
     setShowModal(true);
   };
 
-  const handleOpenEditModal = (item) => {
+  const handleOpenEditModal = async (item) => {
     setIsEditMode(true);
     setEditingId(item._id);
     setTen(item.ten);
@@ -97,7 +104,55 @@ export default function MonAn() {
     setHinhAnh(item.hinhAnh || "");
     setDanhMucId(item.danhMucId?._id || item.danhMucId || "");
     setConBan(item.conBan);
+    
+    // Gọi API chi tiết món ăn (GET /thuc-don/mon-an/:id) để lấy định lượng chi tiết
+    try {
+      const res = await apiClient.get(`/thuc-don/mon-an/${item._id}`);
+      // Định lượng ở backend có populate, đưa về cấu trúc phẳng để edit
+      const dlFlat = (res.data?.dinhLuong || []).map(dl => ({
+        nguyenLieuID: dl.nguyenLieuID?._id || dl.nguyenLieuID,
+        soLuong: dl.soLuong || 1,
+        donVi: dl.donVi || dl.nguyenLieuID?.donViTinh || "kg"
+      }));
+      setDinhLuong(dlFlat);
+    } catch (err) {
+      setDinhLuong([]);
+    }
+    
     setShowModal(true);
+  };
+
+  // Thêm dòng định lượng nguyên liệu mới
+  const handleAddDinhLuongRow = () => {
+    if (nguyenLieuList.length === 0) {
+      alert("Kho chưa có nguyên liệu nào. Vui lòng thêm nguyên liệu vào kho trước!");
+      return;
+    }
+    const firstNL = nguyenLieuList[0];
+    setDinhLuong([
+      ...dinhLuong,
+      { nguyenLieuID: firstNL._id, soLuong: 1, donVi: firstNL.donViTinh || "kg" }
+    ]);
+  };
+
+  // Xóa dòng định lượng
+  const handleRemoveDinhLuongRow = (index) => {
+    setDinhLuong(dinhLuong.filter((_, idx) => idx !== index));
+  };
+
+  // Thay đổi giá trị trong dòng định lượng
+  const handleChangeDinhLuongRow = (index, field, value) => {
+    const newList = [...dinhLuong];
+    newList[index][field] = value;
+    
+    // Nếu đổi nguyên liệu, tự động đồng bộ đơn vị tính của nguyên liệu đó
+    if (field === "nguyenLieuID") {
+      const selectedNL = nguyenLieuList.find(nl => nl._id === value);
+      if (selectedNL) {
+        newList[index].donVi = selectedNL.donViTinh || "kg";
+      }
+    }
+    setDinhLuong(newList);
   };
 
   const handleSaveMonAn = async (e) => {
@@ -105,12 +160,20 @@ export default function MonAn() {
     setError("");
     setMsg("");
     
+    // Đóng gói mảng định lượng đúng cấu trúc của backend schema
+    const formattedDinhLuong = dinhLuong.map(dl => ({
+      nguyenLieuID: dl.nguyenLieuID,
+      soLuong: Number(dl.soLuong),
+      donVi: dl.donVi
+    }));
+
     const data = {
       ten,
       gia: Number(gia),
       hinhAnh,
       danhMucId,
-      conBan
+      conBan,
+      dinhLuong: formattedDinhLuong
     };
 
     try {
@@ -148,8 +211,6 @@ export default function MonAn() {
       const newStatus = !currentStatus;
       await update_status_monan_service(id, newStatus);
       setMsg(`Đã cập nhật trạng thái "${tenMon}" thành ${newStatus ? "ĐANG BÁN" : "TẠM NGƯNG BÁN"}`);
-      
-      // Cập nhật state trực tiếp để tránh xoay spinner toàn trang
       setList(prev => prev.map(item => item._id === id ? { ...item, conBan: newStatus } : item));
     } catch (err) {
       setError(err.toString());
@@ -162,7 +223,7 @@ export default function MonAn() {
       <div className="d-flex justify-content-between align-items-center mb-4">
         <div>
           <h2 className="fw-bold text-dark">🍔 Quản Lý Thực Đơn Món Ăn</h2>
-          <p className="text-secondary mb-0">Thiết lập danh mục thực đơn và giá bán món ăn nhà hàng</p>
+          <p className="text-secondary mb-0">Thiết lập danh mục thực đơn, giá bán và cấu hình định lượng nguyên liệu món ăn</p>
         </div>
         <Button variant="primary" className="fw-bold" onClick={handleOpenAddModal}>
           + Thêm Món Ăn
@@ -316,68 +377,137 @@ export default function MonAn() {
         </Card.Body>
       </Card>
 
-      {/* Modal Thêm / Sửa Món Ăn */}
-      <Modal show={showModal} onHide={() => setShowModal(false)} backdrop="static">
+      {/* Modal Thêm / Sửa Món Ăn & Định Lượng */}
+      <Modal show={showModal} onHide={() => setShowModal(false)} size="lg" backdrop="static">
         <Form onSubmit={handleSaveMonAn}>
           <Modal.Header closeButton>
             <Modal.Title className="fw-bold text-dark">
-              {isEditMode ? "Cập Nhật Món Ăn" : "Thêm Món Ăn Mới"}
+              {isEditMode ? "Cập Nhật Món Ăn & Công Thức" : "Thêm Món Ăn Mới"}
             </Modal.Title>
           </Modal.Header>
-          <Modal.Body>
-            <Form.Group className="mb-3">
-              <Form.Label className="fw-semibold text-secondary">Tên món ăn</Form.Label>
-              <Form.Control
-                required
-                placeholder="VD: Lẩu hải sản, Cơm rang..."
-                value={ten}
-                onChange={(e) => setTen(e.target.value)}
-              />
-            </Form.Group>
+          <Modal.Body style={{ maxHeight: "550px", overflowY: "auto" }}>
+            <Row>
+              <Col md={6}>
+                <h6 className="fw-bold text-primary mb-3 border-bottom pb-2">Thông Tin Cơ Bản</h6>
+                <Form.Group className="mb-3">
+                  <Form.Label className="fw-semibold text-secondary">Tên món ăn</Form.Label>
+                  <Form.Control
+                    required
+                    placeholder="VD: Lẩu hải sản, Cơm rang..."
+                    value={ten}
+                    onChange={(e) => setTen(e.target.value)}
+                  />
+                </Form.Group>
 
-            <Form.Group className="mb-3">
-              <Form.Label className="fw-semibold text-secondary">Giá bán (VNĐ)</Form.Label>
-              <Form.Control
-                type="number"
-                required
-                min={0}
-                placeholder="VD: 150000"
-                value={gia}
-                onChange={(e) => setGia(e.target.value)}
-              />
-            </Form.Group>
+                <Form.Group className="mb-3">
+                  <Form.Label className="fw-semibold text-secondary">Giá bán (VNĐ)</Form.Label>
+                  <Form.Control
+                    type="number"
+                    required
+                    min={0}
+                    placeholder="VD: 150000"
+                    value={gia}
+                    onChange={(e) => setGia(e.target.value)}
+                  />
+                </Form.Group>
 
-            <Form.Group className="mb-3">
-              <Form.Label className="fw-semibold text-secondary">Đường dẫn hình ảnh (URL)</Form.Label>
-              <Form.Control
-                placeholder="VD: https://link-anh.com/com-rang.png"
-                value={hinhAnh}
-                onChange={(e) => setHinhAnh(e.target.value)}
-              />
-            </Form.Group>
+                <Form.Group className="mb-3">
+                  <Form.Label className="fw-semibold text-secondary">Đường dẫn hình ảnh (URL)</Form.Label>
+                  <Form.Control
+                    placeholder="VD: https://link-anh.com/com-rang.png"
+                    value={hinhAnh}
+                    onChange={(e) => setHinhAnh(e.target.value)}
+                  />
+                </Form.Group>
 
-            <Form.Group className="mb-3">
-              <Form.Label className="fw-semibold text-secondary">Danh mục thực đơn</Form.Label>
-              <Form.Select
-                required
-                value={danhMucId}
-                onChange={(e) => setDanhMucId(e.target.value)}
-              >
-                {danhMucList.map(dm => (
-                  <option key={dm._id} value={dm._id}>{dm.ten}</option>
-                ))}
-              </Form.Select>
-            </Form.Group>
+                <Form.Group className="mb-3">
+                  <Form.Label className="fw-semibold text-secondary">Danh mục thực đơn</Form.Label>
+                  <Form.Select
+                    required
+                    value={danhMucId}
+                    onChange={(e) => setDanhMucId(e.target.value)}
+                  >
+                    {danhMucList.map(dm => (
+                      <option key={dm._id} value={dm._id}>{dm.ten}</option>
+                    ))}
+                  </Form.Select>
+                </Form.Group>
 
-            <Form.Group className="mb-3">
-              <Form.Check 
-                type="checkbox"
-                id="conBanCheckbox"
-                label="Cho phép hiển thị bán món ăn này"
-                checked={conBan}
-                onChange={(e) => setConBan(e.target.checked)}
-              />
-            </Form.Group>
+                <Form.Group className="mb-3">
+                  <Form.Check 
+                    type="checkbox"
+                    id="conBanCheckbox"
+                    label="Cho phép hiển thị bán món ăn này"
+                    checked={conBan}
+                    onChange={(e) => setConBan(e.target.checked)}
+                  />
+                </Form.Group>
+              </Col>
+
+              {/* KHU VỰC CẤU HÌNH ĐỊNH LƯỢNG NGUYÊN LIỆU TIÊU HAO */}
+              <Col md={6} className="border-start">
+                <div className="d-flex justify-content-between align-items-center mb-3 border-bottom pb-2">
+                  <h6 className="fw-bold text-primary mb-0">🍳 Định Lượng Tiêu Hao</h6>
+                  <Button variant="outline-primary" size="sm" onClick={handleAddDinhLuongRow} className="fw-bold py-0.5">
+                    + Thêm Dòng
+                  </Button>
+                </div>
+
+                {dinhLuong.length === 0 ? (
+                  <div className="text-center py-5 text-secondary bg-light rounded border">
+                    <i className="bi bi-info-circle fs-4 d-block mb-1"></i>
+                    Món ăn này chưa được cấu hình nguyên liệu tiêu hao khi chế biến.
+                  </div>
+                ) : (
+                  <div className="d-flex flex-column gap-3">
+                    {dinhLuong.map((dl, index) => (
+                      <Row key={index} className="g-2 align-items-end border-bottom pb-2">
+                        <Col xs={6}>
+                          <Form.Label className="small fw-semibold text-secondary">Nguyên liệu</Form.Label>
+                          <Form.Select
+                            value={dl.nguyenLieuID}
+                            onChange={(e) => handleChangeDinhLuongRow(index, "nguyenLieuID", e.target.value)}
+                          >
+                            {nguyenLieuList.map(nl => (
+                              <option key={nl._id} value={nl._id}>{nl.ten}</option>
+                            ))}
+                          </Form.Select>
+                        </Col>
+                        
+                        <Col xs={3}>
+                          <Form.Label className="small fw-semibold text-secondary">Số lượng</Form.Label>
+                          <Form.Control
+                            type="number"
+                            step="any"
+                            min="0.01"
+                            value={dl.soLuong}
+                            onChange={(e) => handleChangeDinhLuongRow(index, "soLuong", e.target.value)}
+                          />
+                        </Col>
+
+                        <Col xs={2}>
+                          <Form.Label className="small fw-semibold text-secondary">Đơn vị</Form.Label>
+                          <Form.Control
+                            disabled
+                            value={dl.donVi}
+                          />
+                        </Col>
+
+                        <Col xs={1} className="text-end">
+                          <Button 
+                            variant="link" 
+                            className="text-danger p-0 mb-1 border-0"
+                            onClick={() => handleRemoveDinhLuongRow(index)}
+                          >
+                            <i className="bi bi-trash-fill fs-5"></i>
+                          </Button>
+                        </Col>
+                      </Row>
+                    ))}
+                  </div>
+                )}
+              </Col>
+            </Row>
           </Modal.Body>
           <Modal.Footer>
             <Button variant="secondary" onClick={() => setShowModal(false)}>Hủy</Button>
