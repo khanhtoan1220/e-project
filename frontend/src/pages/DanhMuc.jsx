@@ -1,17 +1,10 @@
 import React, { useEffect, useState } from "react";
-import {
-  Table,
-  Button,
-  Modal,
-  Form,
-  Spinner,
-  Card
-} from "react-bootstrap";
+import { Table, Button, Modal, Form, Spinner, Card } from "react-bootstrap";
 import {
   get_danhmuc_service,
   create_danhmuc_service,
   update_danhmuc_service,
-  delete_danhmuc_service
+  delete_danhmuc_service,
 } from "../services/quantri_service";
 
 export default function DanhMuc() {
@@ -85,7 +78,11 @@ export default function DanhMuc() {
   };
 
   const handleDelete = async (id, tenDanhMuc) => {
-    if (window.confirm(`Bạn có chắc chắn muốn xóa danh mục "${tenDanhMuc}"?\nLưu ý: Hành động này có thể ảnh hưởng đến các món ăn thuộc danh mục này.`)) {
+    if (
+      window.confirm(
+        `Bạn có chắc chắn muốn xóa danh mục "${tenDanhMuc}"?\nLưu ý: Hành động này có thể ảnh hưởng đến các món ăn thuộc danh mục này.`,
+      )
+    ) {
       try {
         setError("");
         setMsg("");
@@ -104,16 +101,36 @@ export default function DanhMuc() {
       <div className="d-flex justify-content-between align-items-center mb-4">
         <div>
           <h2 className="fw-bold text-dark">📂 Quản Lý Danh Mục Thực Đơn</h2>
-          <p className="text-secondary mb-0">Phân loại các món ăn trong thực đơn của nhà hàng</p>
+          <p className="text-secondary mb-0">
+            Phân loại các món ăn trong thực đơn của nhà hàng
+          </p>
         </div>
-        <Button variant="primary" className="fw-bold" onClick={handleOpenAddModal}>
+        <Button
+          variant="primary"
+          className="fw-bold"
+          onClick={handleOpenAddModal}
+        >
           + Thêm Danh Mục
         </Button>
       </div>
 
       {/* Thông báo */}
-      {msg && <div className="alert alert-success alert-dismissible fade show py-2 px-3 small" role="alert">{msg}</div>}
-      {error && <div className="alert alert-danger alert-dismissible fade show py-2 px-3 small" role="alert">{error}</div>}
+      {msg && (
+        <div
+          className="alert alert-success alert-dismissible fade show py-2 px-3 small"
+          role="alert"
+        >
+          {msg}
+        </div>
+      )}
+      {error && (
+        <div
+          className="alert alert-danger alert-dismissible fade show py-2 px-3 small"
+          role="alert"
+        >
+          {error}
+        </div>
+      )}
 
       {/* Danh sách danh mục */}
       <Card className="shadow-sm border-0 rounded-3">
@@ -121,7 +138,9 @@ export default function DanhMuc() {
           {loading ? (
             <div className="text-center py-5">
               <Spinner animation="border" variant="primary" />
-              <p className="text-secondary mt-2 mb-0">Đang tải danh sách danh mục...</p>
+              <p className="text-secondary mt-2 mb-0">
+                Đang tải danh sách danh mục...
+              </p>
             </div>
           ) : list.length === 0 ? (
             <div className="text-center py-5 text-secondary">
@@ -131,11 +150,19 @@ export default function DanhMuc() {
             <Table hover responsive className="align-middle mb-0">
               <thead className="table-light">
                 <tr>
-                  <th className="px-4 py-3" style={{ width: "80px" }}>#</th>
-                  <th className="py-3" style={{ width: "250px" }}>Tên Danh Mục</th>
+                  <th className="px-4 py-3" style={{ width: "80px" }}>
+                    #
+                  </th>
+                  <th className="py-3" style={{ width: "250px" }}>
+                    Tên Danh Mục
+                  </th>
                   <th className="py-3">Mô Tả</th>
-                  <th className="py-3" style={{ width: "180px" }}>Ngày Tạo</th>
-                  <th className="py-3 text-end px-4" style={{ width: "200px" }}>Thao Tác</th>
+                  <th className="py-3" style={{ width: "180px" }}>
+                    Ngày Tạo
+                  </th>
+                  <th className="py-3 text-end px-4" style={{ width: "200px" }}>
+                    Thao Tác
+                  </th>
                 </tr>
               </thead>
               <tbody>
@@ -148,16 +175,16 @@ export default function DanhMuc() {
                       {new Date(item.createdAt).toLocaleDateString("vi-VN")}
                     </td>
                     <td className="py-3 text-end px-4">
-                      <Button 
-                        variant="outline-warning" 
+                      <Button
+                        variant="outline-warning"
                         size="sm"
                         className="me-2 fw-semibold"
                         onClick={() => handleOpenEditModal(item)}
                       >
                         ✏️ Sửa
                       </Button>
-                      <Button 
-                        variant="outline-danger" 
+                      <Button
+                        variant="outline-danger"
                         size="sm"
                         className="fw-semibold"
                         onClick={() => handleDelete(item._id, item.ten)}
@@ -174,7 +201,11 @@ export default function DanhMuc() {
       </Card>
 
       {/* Modal Thêm / Sửa Danh Mục */}
-      <Modal show={showModal} onHide={() => setShowModal(false)} backdrop="static">
+      <Modal
+        show={showModal}
+        onHide={() => setShowModal(false)}
+        backdrop="static"
+      >
         <Form onSubmit={handleSaveDanhMuc}>
           <Modal.Header closeButton>
             <Modal.Title className="fw-bold text-dark">
@@ -183,7 +214,9 @@ export default function DanhMuc() {
           </Modal.Header>
           <Modal.Body>
             <Form.Group className="mb-3">
-              <Form.Label className="fw-semibold text-secondary">Tên danh mục</Form.Label>
+              <Form.Label className="fw-semibold text-secondary">
+                Tên danh mục
+              </Form.Label>
               <Form.Control
                 required
                 placeholder="VD: Khai vị, Món chính, Đồ uống..."
@@ -193,7 +226,9 @@ export default function DanhMuc() {
             </Form.Group>
 
             <Form.Group className="mb-3">
-              <Form.Label className="fw-semibold text-secondary">Mô tả danh mục</Form.Label>
+              <Form.Label className="fw-semibold text-secondary">
+                Mô tả danh mục
+              </Form.Label>
               <Form.Control
                 as="textarea"
                 rows={3}
@@ -204,7 +239,9 @@ export default function DanhMuc() {
             </Form.Group>
           </Modal.Body>
           <Modal.Footer>
-            <Button variant="secondary" onClick={() => setShowModal(false)}>Hủy</Button>
+            <Button variant="secondary" onClick={() => setShowModal(false)}>
+              Hủy
+            </Button>
             <Button variant="primary" type="submit" className="fw-bold">
               {isEditMode ? "Lưu thay đổi" : "+ Thêm Danh Mục"}
             </Button>
