@@ -35,7 +35,7 @@ export default function AdminHeader() {
       playNotificationSound();
       const newNoti = {
         id: Date.now(),
-        title: "📅 Đặt Bàn Mới",
+        title: "Đặt bàn mới",
         message: data.message || "Có yêu cầu đặt bàn mới từ khách hàng.",
         time: new Date().toLocaleTimeString("vi-VN", { hour: "2-digit", minute: "2-digit" }),
         link: "/admin/dat-ban"
@@ -49,7 +49,7 @@ export default function AdminHeader() {
       playNotificationSound();
       const newNoti = {
         id: Date.now(),
-        title: "🛎️ Gọi Phục Vụ",
+        title: "Yêu cầu hỗ trợ",
         message: data.message || "Bàn ăn yêu cầu nhân viên hỗ trợ!",
         time: new Date().toLocaleTimeString("vi-VN", { hour: "2-digit", minute: "2-digit" }),
         link: "/admin/ban-an"
@@ -79,11 +79,11 @@ export default function AdminHeader() {
   };
 
   return (
-    <Navbar bg="dark" variant="dark" expand="lg" className="px-3 border-bottom border-secondary shadow-sm">
+    <Navbar expand="lg" className="admin-header">
       <Container fluid>
-        <Navbar.Brand href="/admin" className="fw-bold text-warning d-flex align-items-center gap-2">
-          <span>🍽️</span>
-          <span>RESTAURANT ADMIN</span>
+        <Navbar.Brand href="/admin" className="fw-semibold">
+          
+          <span>Bếp Nhà · Quản trị</span>
         </Navbar.Brand>
         
         <Navbar.Toggle aria-controls="admin-navbar-nav" />
@@ -93,13 +93,13 @@ export default function AdminHeader() {
             
             {/* Realtime Notification Dropdown Bell */}
             <Dropdown onClick={handleMarkAsRead} align="end">
-              <Dropdown.Toggle variant="link" className="text-white p-0 position-relative border-0" id="dropdown-notification" style={{ boxShadow: "none" }}>
-                <i className="bi bi-bell-fill fs-5"></i>
+              <Dropdown.Toggle variant="link" className="text-dark position-relative border-0" id="dropdown-notification" style={{ boxShadow: "none" }}>
+                Thông báo
                 {unreadCount > 0 && (
                   <Badge 
                     bg="danger" 
                     pill 
-                    className="position-absolute top-0 start-100 translate-middle p-1 border border-light"
+                    className="ms-2"
                     style={{ fontSize: "0.65rem" }}
                   >
                     {unreadCount}
@@ -107,14 +107,14 @@ export default function AdminHeader() {
                 )}
               </Dropdown.Toggle>
 
-              <Dropdown.Menu className="shadow border-0 py-0" style={{ width: "320px", maxHeight: "400px", overflowY: "auto" }}>
+              <Dropdown.Menu className="border py-0" style={{ width: "320px", maxHeight: "400px", overflowY: "auto" }}>
                 <div className="bg-light p-3 border-bottom d-flex justify-content-between align-items-center">
                   <strong className="text-dark">Thông báo hệ thống</strong>
                   {unreadCount > 0 && <small className="text-primary">{unreadCount} mới</small>}
                 </div>
                 {notifications.length === 0 ? (
                   <div className="p-4 text-center text-secondary small">
-                    <i className="bi bi-bell-slash d-block fs-4 mb-1"></i>
+                    
                     Chưa có thông báo mới nào
                   </div>
                 ) : (
@@ -138,10 +138,10 @@ export default function AdminHeader() {
               </Dropdown.Menu>
             </Dropdown>
 
-            <div className="text-light text-end border-start border-secondary ps-3">
+            <div className="text-dark text-end border-start ps-3">
               <small className="d-block text-secondary" style={{ fontSize: "0.75rem" }}>Tài khoản đang dùng</small>
               <strong>{state.user?.hoTen || "Quản Trị Viên"}</strong>
-              <span className="badge bg-danger ms-2" style={{ fontSize: "0.7rem" }}>
+              <span className="badge bg-light text-secondary ms-2" style={{ fontSize: "0.7rem" }}>
                 {state.user?.vaiTro === "admin" ? "ADMIN" : state.user?.vaiTro}
               </span>
             </div>

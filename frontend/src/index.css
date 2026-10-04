@@ -1,67 +1,143 @@
+:root {
+  --admin-accent: #28594e;
+  --admin-border: #dfe5e2;
+  --bs-primary: #28594e;
+  --bs-primary-rgb: 40, 89, 78;
+  --bs-link-color: #28594e;
+  --bs-link-hover-color: #1d4239;
+}
 body {
   margin: 0;
-  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
-  background-color: #f8f9fa;
-  color: #212529;
-  -webkit-font-smoothing: antialiased;
-  -moz-osx-font-smoothing: grayscale;
+  font-family: Arial, "Segoe UI", sans-serif;
+  font-size: 15px;
+  line-height: 1.5;
+  color: #28342f;
+  background: #f5f6f4;
 }
-
-#root {
-  min-height: 100vh;
+#root { min-height: 100vh; }
+.admin-shell { min-height: 100vh; }
+.admin-header {
+  min-height: 72px;
+  background: white;
+  border-bottom: 1px solid var(--admin-border);
+  padding: 12px 24px;
+}
+.admin-header .navbar-brand { color: #244c42; font-size: 19px; }
+.admin-header .dropdown-menu { max-width: calc(100vw - 32px); }
+.admin-header .dropdown-toggle { text-decoration: none; }
+.admin-body { display: flex; align-items: stretch; min-height: calc(100vh - 72px); }
+.admin-sidebar {
+  flex: 0 0 208px;
+  padding: 28px 16px;
+  background: white;
+  border-right: 1px solid var(--admin-border);
+}
+.sidebar-heading { font-size: 13px; color: #6b756f; margin: 0 12px 16px; }
+.admin-navigation { display: flex; flex-direction: column; gap: 5px; }
+.admin-nav-link {
+  display: block;
+  padding: 11px 14px;
+  border-radius: 5px;
+  color: #526058;
+  text-decoration: none;
+}
+.admin-nav-link:hover { background: #f2f5f2; color: #244c42; }
+.admin-nav-link.active { background: #e8f0eb; color: #244c42; font-weight: 600; }
+.admin-main { flex: 1; min-width: 0; padding: 30px; }
+.admin-content { max-width: 1440px; margin: 0 auto; }
+.admin-page > .page-heading {
   display: flex;
-  flex-direction: column;
-  text-align: left; /* Ghi đè text-align: center của Vite */
+  justify-content: space-between;
+  align-items: center;
+  gap: 16px;
+  flex-wrap: wrap;
+  margin-bottom: 24px;
 }
-
-/* Transition hiệu ứng di chuột mượt mà cho sidebar */
-.transition-all {
-  transition: all 0.25s ease-in-out;
+.page-heading h1 { font-size: 25px; font-weight: 600 !important; margin-bottom: 6px !important; }
+.page-heading .text-muted { font-size: 14px; line-height: 1.6; }
+.admin-page .small, .admin-page small { font-size: 14px; }
+.admin-page .fw-bold { font-weight: 600 !important; }
+.admin-page .rounded-1 { border-radius: 6px !important; }
+.admin-page .border-light-subtle { border-color: var(--admin-border) !important; }
+.table { --bs-table-bg: white; --bs-table-border-color: #e8ece9; --bs-table-hover-bg: #f6f8f6; }
+.table > :not(caption) > * > * { padding: 14px 16px !important; vertical-align: middle; }
+.table thead { --bs-table-bg: #f1f4f1; }
+.table thead th { font-size: 13px !important; color: #526058 !important; font-weight: 600 !important; white-space: nowrap; }
+.table td { font-size: 14px; }
+.table-responsive { border-radius: 6px; }
+.table td .btn-link { min-height: 32px; padding: 4px 0; }
+.table td .badge { white-space: normal; line-height: 1.4; }
+.btn { font-size: 14px; font-weight: 500; border-radius: 5px; padding: 8px 14px; }
+.btn-sm { font-size: 14px; padding: 7px 12px; }
+.btn-dark, .btn-primary {
+  --bs-btn-bg: #28594e;
+  --bs-btn-border-color: #28594e;
+  --bs-btn-hover-bg: #1d4239;
+  --bs-btn-hover-border-color: #1d4239;
+  --bs-btn-active-bg: #1d4239;
+  --bs-btn-active-border-color: #1d4239;
+  --bs-btn-disabled-bg: #28594e;
+  --bs-btn-disabled-border-color: #28594e;
 }
-
-.hover-bg-secondary:hover {
-  background-color: #343a40 !important;
-  color: #fff !important;
+.btn-outline-dark, .btn-outline-primary {
+  --bs-btn-color: #28594e;
+  --bs-btn-border-color: #b9ccc2;
+  --bs-btn-hover-bg: #e8f0eb;
+  --bs-btn-hover-color: #244c42;
+  --bs-btn-hover-border-color: #91aa9d;
+  --bs-btn-active-bg: #e8f0eb;
+  --bs-btn-active-color: #244c42;
 }
-
-.py-2-5 {
-  padding-top: 0.65rem !important;
-  padding-bottom: 0.65rem !important;
+.btn-link { text-decoration: none; }
+.form-control, .form-select, .form-control-sm, .form-select-sm {
+  min-height: 39px;
+  font-size: 14px;
+  border-color: #ccd6cf;
+  border-radius: 5px;
 }
-
-.text-light-gray {
-  color: #adb5bd !important;
+.form-control:focus, .form-select:focus {
+  border-color: #6f9483;
+  box-shadow: 0 0 0 3px rgb(40 89 78 / 12%);
 }
-
-.letter-spacing-1 {
-  letter-spacing: 1px;
+.form-label { font-size: 14px; font-weight: 500; color: #48584e !important; }
+.form-check-input:checked { background-color: #28594e; border-color: #28594e; }
+.btn:focus-visible, a:focus-visible { outline: 3px solid #82a99a; outline-offset: 3px; }
+.badge { font-size: 12px; font-weight: 500; padding: 5px 8px; }
+.text-warning { color: #86620f !important; }
+.alert { border-radius: 5px; }
+.modal-content { border: 1px solid var(--admin-border); border-radius: 8px !important; }
+.modal-header, .modal-footer { padding: 16px 22px !important; }
+.modal-header { background: #f7f9f6; }
+.modal-title { font-size: 18px !important; font-weight: 600 !important; }
+.modal-body { padding: 22px !important; }
+.modal-body .small { font-size: 14px; }
+.modal-body h6 { font-size: 15px !important; }
+.modal-footer { gap: 8px; }
+.nav-tabs { border-bottom-color: var(--admin-border); gap: 6px; }
+.nav-tabs .nav-link { color: #58665e; }
+.nav-tabs .nav-link.active { color: #28594e; font-weight: 600; }
+.login-page { padding: 32px 16px; }
+.login-card { border: 1px solid var(--admin-border); border-radius: 8px; width: 420px; max-width: 100%; }
+.login-heading { padding: 28px 28px 0; }
+.login-heading h1 { font-size: 23px; color: #244c42; }
+.login-heading p { font-size: 14px; color: #6b756f; }
+.login-card .card-body { padding: 24px 28px !important; }
+@media (max-width: 991px) {
+  .admin-header { padding: 12px 16px; }
+  .admin-header .navbar-collapse { padding-top: 16px; }
+  .admin-header .navbar-collapse > div { flex-wrap: wrap; }
+  .admin-body { flex-direction: column; }
+  .admin-sidebar { flex: none; padding: 10px 16px; border-right: 0; border-bottom: 1px solid var(--admin-border); }
+  .sidebar-heading { display: none; }
+  .admin-navigation { flex-direction: row; flex-wrap: nowrap; overflow-x: auto; gap: 4px; padding-bottom: 4px; }
+  .admin-nav-link { white-space: nowrap; padding: 9px 12px; }
+  .admin-main { padding: 22px 16px; }
 }
-
-/* Custom scrollbar mượt cho Sidebar và Main */
-::-webkit-scrollbar {
-  width: 6px;
-  height: 6px;
-}
-
-::-webkit-scrollbar-track {
-  background: #f1f1f1;
-}
-
-::-webkit-scrollbar-thumb {
-  background: #888;
-  border-radius: 3px;
-}
-
-::-webkit-scrollbar-thumb:hover {
-  background: #555;
-}
-
-/* Custom style cho các bảng hiển thị dữ liệu */
-.table {
-  border-radius: 8px;
-  overflow: hidden;
-}
-
-.card {
-  border: none !important;
+@media (max-width: 575px) {
+  .page-heading h1 { font-size: 22px; }
+  .admin-main { padding: 20px 12px; }
+  .modal-body { padding: 16px !important; }
+  .modal-body .border-start { border-left: 0 !important; margin-top: 20px; }
+  .page-heading > .d-flex { flex-wrap: wrap; }
+  .table > :not(caption) > * > * { padding: 12px !important; }
 }

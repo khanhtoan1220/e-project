@@ -3,7 +3,8 @@ const BanAn = require("../models/banAn.model");
 const pusher = require("../config/pusher");
 exports.guiYeuCau = async (req, res) => {
   try {
-    const { banId, loaiYeuCau, noiDung } = req.body;
+    const { loaiYeuCau, noiDung } = req.body;
+    const banId = req.hoaDonKhach.banId._id;
 
     const ban = await BanAn.findById(banId).exec();
     if (!ban) {
@@ -18,6 +19,7 @@ exports.guiYeuCau = async (req, res) => {
 
     const yeuCauMoi = await HoTro.create({
       banId: banId,
+      hoaDonId: req.hoaDonKhach._id,
       loaiYeuCau: loaiYeuCau,
       noiDung: noiDung,
       trangThai: "choXuLy",

@@ -9,7 +9,12 @@ exports.getMonCho = async (req, res) => {
     const monCho = [];
     dsHoaDon.forEach((hd) => {
       hd.danhSachMon.forEach((mon) => {
-        if (mon.trangThaiMon !== "daPhucVu" && mon.trangThaiMon !== "daHuy") {
+        // Bếp chỉ được xem các món đã duyệt (trạng thái choCheBien hoặc dangLam)
+        // Ẩn hoàn toàn các món mới do khách quét QR tự đặt đang ở trạng thái choXacNhan
+        if (
+          mon.trangThaiMon === "choCheBien" ||
+          mon.trangThaiMon === "dangLam"
+        ) {
           monCho.push({ hoaDonId: hd._id, banId: hd.banId, item: mon });
         }
       });
@@ -54,8 +59,14 @@ exports.updateTrangThaiMon = async (req, res) => {
       }
     }
 
+    // Tự động tính toán lại tổng tiền hóa đơn, loại bỏ các món đã bị hủy
+    hoaDon.tongTien = hoaDon.danhSachMon.reduce((sum, mon) => {
+      if (mon.trangThaiMon === "daHuy") return sum;
+      return sum + mon.gia * mon.soLuong;
+    }, 0);
+
     await hoaDon.save();
-    res.json({ message: "Cập nhật thành công" });
+    res.json({ message: "Cập nhật thành công", hoaDon });
     pusher.trigger("nhan-vien-channel", "mon-da-xong", {
       message: `Món "${monItem.ten}" đã nấu xong`,
       banId: hoaDon.banId,

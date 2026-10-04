@@ -1,5 +1,14 @@
 import React, { useEffect, useState } from "react";
-import { Row, Col, Card, Form, Button, Spinner, Table, Badge } from "react-bootstrap";
+import {
+  Row,
+  Col,
+  Card,
+  Form,
+  Button,
+  Spinner,
+  Table,
+  Badge,
+} from "react-bootstrap";
 import {
   BarChart,
   Bar,
@@ -10,7 +19,7 @@ import {
   ResponsiveContainer,
   LineChart,
   Line,
-  Legend
+  Legend,
 } from "recharts";
 import apiClient from "../utils/api";
 import URL from "../constants/URL";
@@ -24,7 +33,7 @@ export default function Dashboard() {
   const [statData, setStatData] = useState({
     tongDoanhThu: 0,
     tongLuotKhach: 0,
-    trungBinhMoiHoaDon: 0
+    trungBinhMoiHoaDon: 0,
   });
 
   const [monBanChay, setMonBanChay] = useState([]);
@@ -34,18 +43,24 @@ export default function Dashboard() {
   const loadDashboardData = async () => {
     try {
       setLoading(true);
-      
-      // Gọi đồng thời các API Thống kê của Backend
-      const [resDoanhThu, resBanChay, resBanE, resKho] = await Promise.all([
-        apiClient.get(`/quan-tri/thong-ke/doanh-thu?thang=${thang}&nam=${nam}`),
-        apiClient.get("/quan-tri/thong-ke/mon-ban-chay?kieu=banchay"),
-        apiClient.get("/quan-tri/thong-ke/mon-ban-chay?kieu=bane"),
-        apiClient.get("/quan-tri/thong-ke/ton-kho-thap")
-      ]);
 
+      // Gọi tuần tự từng API theo đúng chuẩn giảng dạy của thầy Hòa
+      const resDoanhThu = await apiClient.get(
+        `/quan-tri/thong-ke/doanh-thu?thang=${thang}&nam=${nam}`,
+      );
       setStatData(resDoanhThu.data);
+
+      const resBanChay = await apiClient.get(
+        "/quan-tri/thong-ke/mon-ban-chay?kieu=banchay",
+      );
       setMonBanChay(resBanChay.data || []);
+
+      const resBanE = await apiClient.get(
+        "/quan-tri/thong-ke/mon-ban-chay?kieu=bane",
+      );
       setMonBanE(resBanE.data || []);
+
+      const resKho = await apiClient.get("/quan-tri/thong-ke/ton-kho-thap");
       setTonKhoThap(resKho.data || []);
     } catch (error) {
       console.error("Lỗi tải dữ liệu thống kê:", error);
@@ -59,212 +74,340 @@ export default function Dashboard() {
   }, [thang, nam]);
 
   // Chuẩn bị dữ liệu cho biểu đồ
-  const chartDataMon = monBanChay.map(item => ({
+  const chartDataMon = monBanChay.map((item) => ({
     name: item._id || "N/A",
     "Số lượng": item.soLuongDaBan,
-    "Doanh thu": item.doanhThuMon
+    "Doanh thu": item.doanhThuMon,
   }));
 
   return (
-    <div>
+    <div className="admin-page">
       {/* Header Dashboard & Bộ Lọc */}
-      <div className="d-flex justify-content-between align-items-center mb-4">
+      <div className="page-heading">
         <div>
-          <h2 className="fw-bold text-dark">📊 Tổng Quan & Thống Kê Doanh Thu</h2>
-          <p className="text-secondary mb-0">Báo cáo trực quan tình hình kinh doanh của nhà hàng</p>
+          <h1 className="h4 fw-bold text-dark mb-1">Tổng quan</h1>
+          <div className="text-muted small">
+            Báo cáo số liệu và thống kê tình hình hoạt động kinh doanh
+          </div>
         </div>
 
-        {/* Bộ lọc tháng năm */}
-        <Form className="d-flex gap-2 align-items-center bg-white p-2 rounded shadow-sm">
-          <i className="bi bi-funnel text-secondary ms-1"></i>
-          <Form.Select 
-            size="sm" 
-            value={thang} 
-            onChange={(e) => setThang(Number(e.target.value))} 
-            style={{ width: "110px" }}
+        {/* Bộ lọc tháng năm dẹt phẳng */}
+        <div className="d-flex gap-2 align-items-center bg-white p-1 border border-light-subtle rounded-1">
+          <Form.Select
+            size="sm"
+            value={thang}
+            onChange={(e) => setThang(Number(e.target.value))}
+            className="rounded-1 border-0 fw-semibold bg-transparent small"
+            style={{ width: "110px", fontSize: "0.85rem" }}
           >
             {Array.from({ length: 12 }, (_, i) => (
-              <option key={i + 1} value={i + 1}>Tháng {i + 1}</option>
+              <option key={i + 1} value={i + 1}>
+                Tháng {i + 1}
+              </option>
             ))}
           </Form.Select>
-          <Form.Select 
-            size="sm" 
-            value={nam} 
-            onChange={(e) => setNam(Number(e.target.value))} 
-            style={{ width: "100px" }}
+          <Form.Select
+            size="sm"
+            value={nam}
+            onChange={(e) => setNam(Number(e.target.value))}
+            className="rounded-1 border-0 fw-semibold bg-transparent small"
+            style={{ width: "95px", fontSize: "0.85rem" }}
           >
-            {[2024, 2025, 2026].map(y => (
-              <option key={y} value={y}>Năm {y}</option>
+            {[2024, 2025, 2026].map((y) => (
+              <option key={y} value={y}>
+                Năm {y}
+              </option>
             ))}
           </Form.Select>
-          <Button variant="primary" size="sm" onClick={loadDashboardData}>
-            <i className="bi bi-arrow-clockwise"></i>
+          <Button
+            variant="outline-secondary"
+            size="sm"
+            className="text-dark p-1"
+            onClick={loadDashboardData}
+          >
+            Xem báo cáo
           </Button>
-        </Form>
+        </div>
       </div>
 
       {loading ? (
         <div className="text-center py-5">
           <Spinner animation="border" variant="primary" />
-          <p className="text-secondary mt-2">Đang tính toán số liệu thống kê...</p>
+          <p className="text-secondary mt-2">
+            Đang tính toán số liệu thống kê...
+          </p>
         </div>
       ) : (
         <>
-          {/* 1. Các thẻ chỉ số tổng quan (Stat Cards) */}
-          <Row className="g-4 mb-4">
+          {/* 1. Các thẻ chỉ số phẳng dẹt (Flat Metric Card) */}
+          <Row className="g-2 mb-3">
             <Col md={4}>
-              <Card className="border-0 shadow-sm rounded-3 bg-gradient bg-primary text-white">
-                <Card.Body className="p-4 d-flex align-items-center justify-content-between">
-                  <div>
-                    <small className="text-white-50 text-uppercase fw-bold" style={{ fontSize: "0.75rem" }}>Tổng Doanh Thu (Đã thanh toán)</small>
-                    <h2 className="fw-bold mt-1 mb-0">{Number(statData.tongDoanhThu || 0).toLocaleString("vi-VN")}đ</h2>
-                  </div>
-                  <div className="bg-white bg-opacity-25 rounded p-3">
-                    <i className="bi bi-cash-coin fs-2"></i>
-                  </div>
-                </Card.Body>
-              </Card>
-            </Col>
-            
-            <Col md={4}>
-              <Card className="border-0 shadow-sm rounded-3 bg-gradient bg-success text-white">
-                <Card.Body className="p-4 d-flex align-items-center justify-content-between">
-                  <div>
-                    <small className="text-white-50 text-uppercase fw-bold" style={{ fontSize: "0.75rem" }}>Đơn Hàng Thành Công</small>
-                    <h2 className="fw-bold mt-1 mb-0">{statData.tongLuotKhach || 0} hóa đơn</h2>
-                  </div>
-                  <div className="bg-white bg-opacity-25 rounded p-3">
-                    <i className="bi bi-receipt fs-2"></i>
-                  </div>
-                </Card.Body>
-              </Card>
+              <div className="bg-white p-3 border border-light-subtle rounded-1">
+                <div
+                  className="text-muted small fw-semibold "
+                  style={{ fontSize: "0.8rem", letterSpacing: "0.5px" }}
+                >
+                  Doanh thu tháng
+                </div>
+                <h3
+                  className="fw-bold text-dark mt-1 mb-0"
+                  style={{ fontSize: "1.45rem" }}
+                >
+                  {Number(statData.tongDoanhThu || 0).toLocaleString("vi-VN")}đ
+                </h3>
+                <div
+                  className="text-success small mt-2"
+                  style={{ fontSize: "0.85rem" }}
+                >
+                  Chỉ tính hóa đơn thành công
+                </div>
+              </div>
             </Col>
 
             <Col md={4}>
-              <Card className="border-0 shadow-sm rounded-3 bg-gradient bg-info text-dark">
-                <Card.Body className="p-4 d-flex align-items-center justify-content-between">
-                  <div>
-                    <small className="text-dark-50 text-uppercase fw-bold" style={{ fontSize: "0.75rem" }}>Giá Trị Trung Bình / Đơn</small>
-                    <h2 className="fw-bold mt-1 mb-0">{Number(statData.trungBinhMoiHoaDon || 0).toLocaleString("vi-VN")}đ</h2>
-                  </div>
-                  <div className="bg-white bg-opacity-25 rounded p-3">
-                    <i className="bi bi-calculator fs-2"></i>
-                  </div>
-                </Card.Body>
-              </Card>
+              <div className="bg-white p-3 border border-light-subtle rounded-1">
+                <div
+                  className="text-muted small fw-semibold "
+                  style={{ fontSize: "0.8rem", letterSpacing: "0.5px" }}
+                >
+                  Lượt khách phục vụ
+                </div>
+                <h3
+                  className="fw-bold text-dark mt-1 mb-0"
+                  style={{ fontSize: "1.45rem" }}
+                >
+                  {statData.tongLuotKhach || 0} lượt đơn
+                </h3>
+                <div
+                  className="text-muted small mt-2"
+                  style={{ fontSize: "0.85rem" }}
+                >
+                  Hóa đơn đã chốt
+                </div>
+              </div>
+            </Col>
+
+            <Col md={4}>
+              <div className="bg-white p-3 border border-light-subtle rounded-1">
+                <div
+                  className="text-muted small fw-semibold "
+                  style={{ fontSize: "0.8rem", letterSpacing: "0.5px" }}
+                >
+                  Giá trị trung bình đơn
+                </div>
+                <h3
+                  className="fw-bold text-dark mt-1 mb-0"
+                  style={{ fontSize: "1.45rem" }}
+                >
+                  {Number(statData.trungBinhMoiHoaDon || 0).toLocaleString(
+                    "vi-VN",
+                  )}
+                  đ
+                </h3>
+                <div
+                  className="text-muted small mt-2"
+                  style={{ fontSize: "0.85rem" }}
+                >
+                  Doanh số trên mỗi lượt khách
+                </div>
+              </div>
             </Col>
           </Row>
 
           {/* 2. Biểu đồ món ăn bán chạy */}
-          <Row className="mb-4">
-            <Col md={12}>
-              <Card className="border-0 shadow-sm rounded-3">
-                <Card.Body className="p-4">
-                  <h5 className="fw-bold text-dark mb-4">🔥 Top 10 Món Ăn Bán Chạy Nhất (Số lượng & Doanh thu)</h5>
-                  <div style={{ width: "100%", height: 350 }}>
-                    {chartDataMon.length === 0 ? (
-                      <div className="text-center py-5 text-secondary">Chưa có dữ liệu bán hàng.</div>
-                    ) : (
-                      <ResponsiveContainer>
-                        <BarChart data={chartDataMon} margin={{ top: 20, right: 30, left: 20, bottom: 5 }}>
-                          <CartesianGrid strokeDasharray="3 3" />
-                          <XAxis dataKey="name" />
-                          <YAxis yAxisId="left" orientation="left" stroke="#8884d8" />
-                          <YAxis yAxisId="right" orientation="right" stroke="#82ca9d" />
-                          <Tooltip />
-                          <Legend />
-                          <Bar yAxisId="left" dataKey="Số lượng" fill="#3b82f6" radius={[4, 4, 0, 0]} />
-                          <Bar yAxisId="right" dataKey="Doanh thu" fill="#10b981" radius={[4, 4, 0, 0]} />
-                        </BarChart>
-                      </ResponsiveContainer>
-                    )}
-                  </div>
-                </Card.Body>
-              </Card>
-            </Col>
-          </Row>
+          <div className="bg-white border border-light-subtle rounded-1 p-3 mb-3">
+            <h6 className="fw-bold text-dark mb-3 small">
+              Món bán chạy
+            </h6>
+            <div style={{ width: "100%", height: 300 }}>
+              {chartDataMon.length === 0 ? (
+                <div className="text-center py-5 text-secondary small">
+                  Chưa có dữ liệu bán hàng.
+                </div>
+              ) : (
+                <ResponsiveContainer>
+                  <BarChart
+                    data={chartDataMon}
+                    margin={{ top: 10, right: 20, left: 10, bottom: 5 }}
+                  >
+                    <CartesianGrid strokeDasharray="2 2" stroke="#f1f5f9" />
+                    <XAxis dataKey="name" tick={{ fontSize: 12 }} />
+                    <YAxis
+                      yAxisId="left"
+                      orientation="left"
+                      stroke="#475569"
+                      tick={{ fontSize: 12 }}
+                    />
+                    <YAxis
+                      yAxisId="right"
+                      orientation="right"
+                      stroke="#15803d"
+                      tick={{ fontSize: 12 }}
+                    />
+                    <Tooltip />
+                    <Legend wrapperStyle={{ fontSize: 12 }} />
+                    <Bar
+                      yAxisId="left"
+                      dataKey="Số lượng"
+                      fill="#28594e"
+                      radius={[1, 1, 0, 0]}
+                    />
+                    <Bar
+                      yAxisId="right"
+                      dataKey="Doanh thu"
+                      fill="#9daf9d"
+                      radius={[1, 1, 0, 0]}
+                    />
+                  </BarChart>
+                </ResponsiveContainer>
+              )}
+            </div>
+          </div>
 
-          {/* 3. Bảng cảnh báo kho & món bán chậm */}
-          <Row className="g-4">
+          {/* 3. Bảng cảnh báo kho & món bán chậm dẹt phẳng */}
+          <Row className="g-2">
             {/* Tồn kho thấp */}
             <Col md={6}>
-              <Card className="border-0 shadow-sm rounded-3 h-100">
-                <Card.Header className="bg-white border-0 pt-4 px-4 d-flex justify-content-between align-items-center">
-                  <h5 className="fw-bold text-danger mb-0">
-                    <i className="bi bi-exclamation-triangle-fill me-2"></i>Cảnh Báo Tồn Kho Thấp (&lt; 10)
-                  </h5>
-                </Card.Header>
-                <Card.Body className="px-4 pb-4">
-                  {tonKhoThap.length === 0 ? (
-                    <div className="text-center py-5 text-success">
-                      <i className="bi bi-check-circle-fill fs-1 d-block mb-2"></i>
-                      Tất cả nguyên liệu trong kho đều an toàn!
-                    </div>
-                  ) : (
-                    <Table responsive hover className="align-middle mb-0 mt-2">
-                      <thead>
-                        <tr>
-                          <th>Nguyên Liệu</th>
-                          <th>Đơn Vị</th>
-                          <th>Còn Lại</th>
-                          <th>Trạng Thái</th>
+              <div className="bg-white border border-light-subtle rounded-1 p-3 h-100">
+                <h6 className="fw-bold text-danger mb-3 small">
+                  Nguyên liệu sắp hết (dưới 10)
+                </h6>
+                {tonKhoThap.length === 0 ? (
+                  <div className="text-center py-4 text-success small">
+                    Tất cả nguyên liệu trong kho đều an toàn.
+                  </div>
+                ) : (
+                  <Table
+                    responsive
+                    hover
+                    className="align-middle mb-0 table-sm small"
+                  >
+                    <thead className="table-light border-bottom">
+                      <tr>
+                        <th className="text-muted py-2 fw-semibold small">
+                          Nguyên liệu
+                        </th>
+                        <th
+                          className="text-muted py-2 fw-semibold small"
+                          style={{ width: "100px" }}
+                        >
+                          Đơn vị
+                        </th>
+                        <th
+                          className="text-muted py-2 fw-semibold small"
+                          style={{ width: "100px" }}
+                        >
+                          Tồn thực tế
+                        </th>
+                        <th
+                          className="text-muted py-2 fw-semibold small"
+                          style={{ width: "100px" }}
+                        >
+                          Tình trạng
+                        </th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {tonKhoThap.map((item) => (
+                        <tr
+                          key={item._id}
+                          className="border-bottom last-border-0"
+                        >
+                          <td className="fw-semibold text-dark py-2 small">
+                            {item.ten}
+                          </td>
+                          <td className="py-2 small">{item.donVi}</td>
+                          <td className="text-danger fw-bold py-2 small">
+                            {item.soLuongTon}
+                          </td>
+                          <td className="py-2 small">
+                            {item.soLuongTon === 0 ? (
+                              <Badge
+                                bg="danger-subtle"
+                                text="danger"
+                                className="border border-danger rounded-1 px-2 py-1 font-weight-normal small-text"
+                                style={{ fontSize: "0.8rem" }}
+                              >
+                                Hết sạch
+                              </Badge>
+                            ) : (
+                              <Badge
+                                bg="warning-subtle"
+                                text="warning"
+                                className="border border-warning rounded-1 px-2 py-1 font-weight-normal small-text"
+                                style={{ fontSize: "0.8rem" }}
+                              >
+                                Sắp hết
+                              </Badge>
+                            )}
+                          </td>
                         </tr>
-                      </thead>
-                      <tbody>
-                        {tonKhoThap.map(item => (
-                          <tr key={item._id}>
-                            <td className="fw-bold text-dark">{item.tenNguyenLieu}</td>
-                            <td>{item.donViTinh}</td>
-                            <td className="text-danger fw-bold">{item.soLuongTon}</td>
-                            <td>
-                              {item.soLuongTon === 0 ? (
-                                <Badge bg="danger">Hết hàng</Badge>
-                              ) : (
-                                <Badge bg="warning" text="dark">Sắp hết</Badge>
-                              )}
-                            </td>
-                          </tr>
-                        ))}
-                      </tbody>
-                    </Table>
-                  )}
-                </Card.Body>
-              </Card>
+                      ))}
+                    </tbody>
+                  </Table>
+                )}
+              </div>
             </Col>
 
             {/* Món bán chậm */}
             <Col md={6}>
-              <Card className="border-0 shadow-sm rounded-3 h-100">
-                <Card.Header className="bg-white border-0 pt-4 px-4">
-                  <h5 className="fw-bold text-dark mb-0">
-                    <i className="bi bi-arrow-down-right-circle-fill text-warning me-2"></i>Món Ăn Bán Ít / Chậm Nhất
-                  </h5>
-                </Card.Header>
-                <Card.Body className="px-4 pb-4">
-                  {monBanE.length === 0 ? (
-                    <div className="text-center py-5 text-secondary">Chưa có dữ liệu thống kê món bán chậm.</div>
-                  ) : (
-                    <Table responsive hover className="align-middle mb-0 mt-2">
-                      <thead>
-                        <tr>
-                          <th>Tên Món Ăn</th>
-                          <th>Đã Bán</th>
-                          <th>Doanh Thu Thu Được</th>
+              <div className="bg-white border border-light-subtle rounded-1 p-3 h-100">
+                <h6 className="fw-bold text-dark mb-3 small">
+                  Món ít được gọi
+                </h6>
+                {monBanE.length === 0 ? (
+                  <div className="text-center py-4 text-secondary small">
+                    Chưa có dữ liệu thống kê món bán chậm.
+                  </div>
+                ) : (
+                  <Table
+                    responsive
+                    hover
+                    className="align-middle mb-0 table-sm small"
+                  >
+                    <thead className="table-light border-bottom">
+                      <tr>
+                        <th className="text-muted py-2 fw-semibold small">
+                          Tên món ăn
+                        </th>
+                        <th
+                          className="text-muted py-2 fw-semibold small text-center"
+                          style={{ width: "100px" }}
+                        >
+                          Đã bán
+                        </th>
+                        <th
+                          className="text-muted py-2 fw-semibold text-end px-3 small"
+                          style={{ width: "150px" }}
+                        >
+                          Doanh thu
+                        </th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {monBanE.map((item) => (
+                        <tr
+                          key={item._id}
+                          className="border-bottom last-border-0"
+                        >
+                          <td className="fw-semibold text-dark py-2 small">
+                            {item._id}
+                          </td>
+                          <td className="text-danger fw-bold py-2 text-center small">
+                            {item.soLuongDaBan} phần
+                          </td>
+                          <td className="text-secondary py-2 text-end px-3 small">
+                            {Number(item.doanhThuMon || 0).toLocaleString(
+                              "vi-VN",
+                            )}
+                            đ
+                          </td>
                         </tr>
-                      </thead>
-                      <tbody>
-                        {monBanE.map(item => (
-                          <tr key={item._id}>
-                            <td className="fw-bold text-dark">{item._id}</td>
-                            <td className="text-danger fw-bold">{item.soLuongDaBan} phần</td>
-                            <td className="text-secondary">{Number(item.doanhThuMon || 0).toLocaleString("vi-VN")}đ</td>
-                          </tr>
-                        ))}
-                      </tbody>
-                    </Table>
-                  )}
-                </Card.Body>
-              </Card>
+                      ))}
+                    </tbody>
+                  </Table>
+                )}
+              </div>
             </Col>
           </Row>
         </>
