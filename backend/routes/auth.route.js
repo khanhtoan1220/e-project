@@ -9,8 +9,8 @@ router.patch("/doi-mat-khau", checkAuth, nguoiDungController.doiMatKhau);
 
 router.post(
   "/register",
-  checkAuth,
-  checkRole(["admin"]),
+  // checkAuth,
+  // checkRole(["admin"]),
   nguoiDungController.dangKy,
 );
 router.post("/logout", checkAuth, nguoiDungController.dangXuat);
