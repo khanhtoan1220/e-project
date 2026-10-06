@@ -95,7 +95,7 @@ exports.huyHoaDon = async (req, res) => {
 
     const daHuy = await HoaDon.findOneAndUpdate(
       { _id: hoaDon._id, trangThai: "chuaThanhToan" },
-      { trangThai: "daHuy", thoiGianRa: new Date(), qrTokenHash: null, qrHetHan: null },
+      { trangThai: "daHuy", thoiGianRa: new Date() },
       { new: true },
     );
     if (!daHuy) return res.status(409).json({ message: "Hóa đơn đã kết thúc." });

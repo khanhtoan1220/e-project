@@ -1,4 +1,3 @@
-const crypto = require("crypto");
 const BanAn = require("../models/banAn.model");
 const HoaDon = require("../models/hoaDon.model");
 const Menu = require("../models/menu.model");
@@ -8,61 +7,6 @@ exports.laySoDoBan = async (req, res) => {
   try {
     const list = await BanAn.find().populate("hoaDon").exec();
     res.json(list);
-  } catch (error) {
-    res.status(400).json({ message: error.message });
-  }
-};
-
-exports.moBan = async (req, res) => {
-  try {
-    const { banId } = req.body;
-    const ban = await BanAn.findById(banId);
-    if (!ban) return res.status(404).json({ message: "Không tìm thấy bàn." });
-    if (!["trong", "datTruoc"].includes(ban.trangThai)) {
-      return res.status(409).json({ message: "Bàn chưa sẵn sàng để mở." });
-    }
-    const hoaDon = await HoaDon.create({ banId, danhSachMon: [] });
-    try {
-      const capNhat = await BanAn.findOneAndUpdate(
-        { _id: banId, trangThai: ban.trangThai, hoaDon: ban.hoaDon || null },
-        { trangThai: "dangSuDung", hoaDon: hoaDon._id },
-        { new: true, runValidators: true },
-      );
-      if (!capNhat) {
-        await HoaDon.findByIdAndDelete(hoaDon._id);
-        return res.status(409).json({ message: "Bàn đã được nhân viên khác cập nhật." });
-      }
-    } catch (error) {
-      await HoaDon.findByIdAndDelete(hoaDon._id);
-      throw error;
-    }
-    res.status(201).json(hoaDon);
-  } catch (error) {
-    res.status(400).json({ message: error.message });
-  }
-};
-
-exports.taoQr = async (req, res) => {
-  try {
-    const hoaDon = await HoaDon.findById(req.params.hoaDonId).populate("banId");
-    if (!hoaDon || hoaDon.trangThai !== "chuaThanhToan" ||
-        !hoaDon.banId || hoaDon.banId.trangThai !== "dangSuDung" ||
-        String(hoaDon.banId.hoaDon) !== String(hoaDon._id)) {
-      return res.status(409).json({ message: "Hóa đơn không còn phục vụ." });
-    }
-    const token = crypto.randomBytes(32).toString("hex");
-    const tokenHash = crypto.createHash("sha256").update(token).digest("hex");
-    const expiresAt = new Date(Date.now() + 4 * 60 * 60 * 1000);
-    const accessUrl = new URL("/goi-mon", process.env.CUSTOMER_FRONTEND_URL || "http://localhost:5175");
-    accessUrl.hash = new URLSearchParams({ token }).toString();
-    const capNhat = await HoaDon.findOneAndUpdate(
-      { _id: hoaDon._id, trangThai: "chuaThanhToan" },
-      { qrTokenHash: tokenHash, qrHetHan: expiresAt },
-      { new: true },
-    );
-    if (!capNhat) return res.status(409).json({ message: "Hóa đơn đã kết thúc." });
-    res.set("Cache-Control", "no-store");
-    res.json({ accessUrl: accessUrl.toString(), expiresAt });
   } catch (error) {
     res.status(400).json({ message: error.message });
   }
@@ -96,24 +40,23 @@ exports.goiMon = async (req, res) => {
       danhSachMon.push({
         menuId: mon._id, ten: mon.ten, gia: mon.gia, soLuong: item.soLuong,
         ghiChu: item.ghiChu, canNao: mon.canNao,
-        trangThaiMon: laKhach ? "choXacNhan" : mon.canNao === false ? "daXong" : "choCheBien",
+        trangThaiMon: mon.canNao === false ? "daXong" : "choCheBien",
       });
       thanhTien += mon.gia * item.soLuong;
     }
     const dieuKien = { _id: hoaDon._id, trangThai: "chuaThanhToan", banId: hoaDon.banId._id };
-    if (laKhach) {
-      dieuKien.qrTokenHash = req.qrTokenHash;
-      dieuKien.qrHetHan = { $gt: new Date() };
-    }
     const capNhat = await HoaDon.findOneAndUpdate(dieuKien, {
       $push: { danhSachMon: { $each: danhSachMon } },
       $inc: { tongTien: thanhTien, __v: 1 },
     }, { new: true, runValidators: true });
-    if (!capNhat) return res.status(409).json({ message: "QR hoặc hóa đơn đã thay đổi. Vui lòng tải lại." });
-    pusher.trigger(laKhach ? "nhan-vien-channel" : "bep-channel",
-      laKhach ? "yeu-cau-moi" : "co-don-moi",
-      { message: "Bàn " + hoaDon.banId.ten + " vừa gọi thêm món.", hoaDonId: hoaDon._id, banId: hoaDon.banId._id }
-    ).catch(console.error);
+    if (!capNhat) return res.status(409).json({ message: "Bàn hoặc hóa đơn đã thay đổi. Vui lòng tải lại." });
+    const suKien = { message: "Bàn " + hoaDon.banId.ten + " vừa gọi thêm món.", hoaDonId: hoaDon._id, banId: hoaDon.banId._id };
+    if (laKhach) {
+      pusher.trigger("nhan-vien-channel", "yeu-cau-moi", suKien).catch(console.error);
+    }
+    if (danhSachMon.some((mon) => mon.trangThaiMon === "choCheBien")) {
+      pusher.trigger("bep-channel", "co-don-moi", suKien).catch(console.error);
+    }
     res.json(capNhat);
   } catch (error) {
     res.status(400).json({ message: error.message });
@@ -161,7 +104,7 @@ exports.thanhToan = async (req, res) => {
     const daThanhToan = await HoaDon.findOneAndUpdate(
       { _id: hoaDon._id, trangThai: "chuaThanhToan",
         danhSachMon: { $not: { $elemMatch: { trangThaiMon: { $nin: ["daPhucVu", "daHuy"] } } } } },
-      { trangThai: "daThanhToan", thoiGianRa: new Date(), qrTokenHash: null, qrHetHan: null },
+      { trangThai: "daThanhToan", thoiGianRa: new Date() },
       { new: true },
     );
     if (!daThanhToan) {
@@ -290,7 +233,7 @@ exports.xacNhanPhucVuMon = async (req, res) => {
   }
 };
 
-// Phục vụ xác nhận duyệt các món khách tự gọi qua QR để gửi xuống Bếp (choXacNhan -> choCheBien)
+// Phục vụ xác nhận duyệt các món khách tự gọi để gửi xuống Bếp (choXacNhan -> choCheBien)
 exports.duyetMonAnKhachGoi = async (req, res) => {
   try {
     const { hoaDonId } = req.body;

@@ -7,7 +7,6 @@ const URL = {
 
   // Phục vụ
   PHUC_VU_SO_DO: "/phuc-vu/so-do-ban",
-  PHUC_VU_MO_BAN: "/phuc-vu/mo-ban",
   PHUC_VU_GOI_MON: "/phuc-vu/goi-mon",
   PHUC_VU_THANH_TOAN: "/phuc-vu/thanh-toan",
   PHUC_VU_DON_BAN: (id) => `/phuc-vu/don-ban/${id}`,

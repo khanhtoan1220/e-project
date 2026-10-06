@@ -1,5 +1,5 @@
-import ENV from "../constants/ENV";
 import QrGoiMon from "../components/QrGoiMon";
+import ENV from "../constants/ENV";
 import React, { useEffect, useState } from "react";
 import {
   Row,
@@ -15,7 +15,6 @@ import {
 } from "react-bootstrap";
 import {
   get_sodoban_service,
-  mo_ban_service,
   get_hoadon_ban_service,
   get_danhmuc_menu_service,
   get_monan_menu_service,
@@ -94,21 +93,6 @@ export default function PhucVu() {
   useEffect(() => {
     loadSodoBan();
   }, []);
-
-  // Mở bàn
-  const handleMoBan = async (banId, tenBan) => {
-    if (window.confirm(`Xác nhận MỞ BÀN đón khách tại [${tenBan}]?`)) {
-      try {
-        setError("");
-        setMsg("");
-        await mo_ban_service(banId);
-        setMsg(`Mở bàn [${tenBan}] thành công!`);
-        loadSodoBan();
-      } catch (err) {
-        setError(err.toString());
-      }
-    }
-  };
 
   // Hoàn tất dọn bàn
   const handleHoanTatDonBan = async (banId, tenBan) => {
@@ -353,7 +337,7 @@ export default function PhucVu() {
         <div>
           <h1 className="h4 fw-bold text-dark mb-1">Bàn ăn</h1>
           <div className="text-muted small">
-            Quản lý trạng thái bàn ăn, hỗ trợ khách gọi món và thanh toán
+            Khách quét mã QR cố định trên bàn để bắt đầu lượt phục vụ.
           </div>
         </div>
         <Button
@@ -437,21 +421,12 @@ export default function PhucVu() {
                         {style.status}
                       </span>
                     </div>
+                    <QrGoiMon banId={ban._id} tenBan={ban.ten} />
                   </div>
 
                   {/* Nút hành động dẹt */}
                   <div className="d-flex flex-column gap-2 mt-2">
-                    {["trong", "datTruoc"].includes(ban.trangThai) && (
-                      <Button
-                        variant="dark"
-                        size="sm"
-                        className="fw-semibold py-1 rounded-1 text-white border-0"
-                        style={{ backgroundColor: style.text }}
-                        onClick={() => handleMoBan(ban._id, ban.ten)}
-                      >
-                        Mở bàn
-                      </Button>
-                    )}
+
 
                     {ban.trangThai === "dangSuDung" && (
                       <Button
@@ -464,9 +439,7 @@ export default function PhucVu() {
                       </Button>
                     )}
 
-                    {ban.trangThai === "dangSuDung" && ban.hoaDon && (
-                      <QrGoiMon key={ban.hoaDon._id} hoaDon={ban.hoaDon} tenBan={ban.ten} />
-                    )}
+
 
                     {ban.trangThai === "choDonDep" && (
                       <Button

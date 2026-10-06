@@ -4,11 +4,20 @@ import api from "../services/api";
 function Menu({
   selectedCategoryId,
   searchKeyword = "",
+  minGia = "",
+  maxGia = "",
   onAddToCart,
 }) {
   const [items, setItems] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
+  const layUrlAnh = (url) => {
+    try {
+      return new URL(url, import.meta.env.VITE_ASSET_URL || window.location.origin).toString();
+    } catch {
+      return url;
+    }
+  };
 
   useEffect(() => {
     const loadMenu = async () => {
@@ -16,23 +25,25 @@ function Menu({
         setLoading(true);
         setError("");
 
-        const response = await api.get("/menuitem");
+        const response = await api.get("/thuc-don/mon-an", {
+          params: {
+            danhMuc: selectedCategoryId || undefined,
+            search: searchKeyword.trim() || undefined,
+            minGia: minGia || undefined,
+            maxGia: maxGia || undefined,
+          },
+        });
 
         let data = Array.isArray(response.data)
           ? response.data
           : [];
 
-        // Chỉ hiển thị món đang phục vụ
-        data = data.filter(
-          (item) => item.isAvailable !== false
-        );
-
         // Lọc danh mục
         if (selectedCategoryId) {
           data = data.filter((item) => {
             const categoryId =
-              item.categoryId?._id ||
-              item.categoryId;
+              item.danhMucId?._id ||
+              item.danhMucId;
 
             return (
               String(categoryId) ===
@@ -49,11 +60,11 @@ function Menu({
         if (keyword) {
           data = data.filter((item) => {
             const name = String(
-              item.name || ""
+              item.ten || ""
             ).toLowerCase();
 
             const description = String(
-              item.description || ""
+              item.moTa || ""
             ).toLowerCase();
 
             return (
@@ -62,6 +73,9 @@ function Menu({
             );
           });
         }
+
+        if (minGia !== "") data = data.filter((item) => Number(item.gia) >= Number(minGia));
+        if (maxGia !== "") data = data.filter((item) => Number(item.gia) <= Number(maxGia));
 
         setItems(data);
       } catch (error) {
@@ -73,7 +87,7 @@ function Menu({
     };
 
     loadMenu();
-  }, [selectedCategoryId, searchKeyword]);
+  }, [selectedCategoryId, searchKeyword, minGia, maxGia]);
 
   if (loading) {
     return (
@@ -98,10 +112,10 @@ function Menu({
           className="menu-card"
           key={item._id}
         >
-          {item.image ? (
+          {item.hinhAnh ? (
             <img
-              src={item.image}
-              alt={item.name}
+              src={layUrlAnh(item.hinhAnh)}
+              alt={item.ten}
             />
           ) : (
             <div className="menu-placeholder">
@@ -110,30 +124,35 @@ function Menu({
           )}
 
           <div className="menu-card-body">
-            <h3>{item.name}</h3>
+            <h3>{item.ten}</h3>
 
-            {item.description && (
+            <span className={`availability-label ${item.conBan ? "available" : "unavailable"}`}>
+              {item.conBan ? "Đang phục vụ" : "Hết món"}
+            </span>
+
+            {item.moTa && (
               <p className="menu-description">
-                {item.description}
+                {item.moTa}
               </p>
             )}
 
             <div className="menu-card-bottom">
               <p className="price">
                 {Number(
-                  item.price || 0
+                  item.gia || 0
                 ).toLocaleString("vi-VN")}{" "}
                 đ
               </p>
 
-              <button
-                type="button"
-                onClick={() =>
-                  onAddToCart(item)
-                }
-              >
-                + Thêm
-              </button>
+              {onAddToCart && (
+                <button
+                  type="button"
+                  disabled={!item.conBan}
+                  onClick={() => onAddToCart({ ...item, name: item.ten, price: item.gia })}
+                >
+                  {item.conBan ? "+ Thêm" : "Hết món"}
+                </button>
+              )}
             </div>
           </div>
         </article>

@@ -52,8 +52,6 @@ const hoaDonSchema = new mongoose.Schema(
     tongTien: { type: Number, default: 0 },
     thoiGianVao: { type: Date, default: Date.now },
     thoiGianRa: Date,
-    qrTokenHash: { type: String, select: false, default: null },
-    qrHetHan: { type: Date, default: null },
   },
   {
     timestamps: true,

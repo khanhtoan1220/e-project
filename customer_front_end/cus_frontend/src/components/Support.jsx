@@ -1,9 +1,8 @@
 import { useState } from "react";
 import api from "../services/api";
 
-function Support() {
+function Support({ banId }) {
   const [form, setForm] = useState({
-    banId: "",
     loaiYeuCau: "goiNhanVien",
     noiDung: ""
   });
@@ -23,9 +22,13 @@ function Support() {
     setError("");
 
     try {
-      const response = await api.post("/khach-hang/ho-tro", form);
+      if (!banId) {
+        setError("Vui lòng quét mã QR tại bàn để gọi nhân viên.");
+        return;
+      }
+      const response = await api.post(`/khach-hang/ban/${banId}/ho-tro`, form);
       setMessage(response.data?.message || "Đã gửi yêu cầu hỗ trợ.");
-      setForm({ banId: "", loaiYeuCau: "goiNhanVien", noiDung: "" });
+      setForm({ loaiYeuCau: "goiNhanVien", noiDung: "" });
     } catch (error) {
       console.error(error);
       setError(error.response?.data?.message || "Không thể gửi yêu cầu.");
@@ -36,14 +39,7 @@ function Support() {
     <section className="page-section narrow-section">
       <h1>Yêu cầu hỗ trợ</h1>
       <form className="form-card" onSubmit={submit}>
-        <label>Mã bàn</label>
-        <input
-          name="banId"
-          value={form.banId}
-          onChange={change}
-          placeholder="Nhập ID bàn"
-          required
-        />
+        {banId ? <p className="hint">Yêu cầu hỗ trợ cho bàn đang dùng mã QR.</p> : <p className="hint">Tính năng gọi nhân viên chỉ dùng được khi bạn đang ngồi tại bàn và đã quét mã QR.</p>}
 
         <label>Loại yêu cầu</label>
         <select name="loaiYeuCau" value={form.loaiYeuCau} onChange={change}>
@@ -65,7 +61,7 @@ function Support() {
         {message && <p className="success-text">{message}</p>}
         {error && <p className="error-text">{error}</p>}
 
-        <button className="primary-button">Gửi yêu cầu</button>
+        <button className="primary-button" disabled={!banId}>Gửi yêu cầu</button>
       </form>
     </section>
   );

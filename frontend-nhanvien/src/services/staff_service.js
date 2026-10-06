@@ -51,15 +51,6 @@ export const get_sodoban_service = async () => {
   }
 };
 
-export const mo_ban_service = async (banId) => {
-  try {
-    const res = await apiClient.post(URL.PHUC_VU_MO_BAN, { banId });
-    return res.data;
-  } catch (error) {
-    throw error.response?.data?.message || "Mở bàn thất bại";
-  }
-};
-
 export const get_hoadon_ban_service = async (banId) => {
   try {
     const res = await apiClient.get(URL.HOA_DON_BAN(banId));
@@ -196,14 +187,5 @@ export const get_monan_menu_service = async (danhMucId = "") => {
     return res.data || [];
   } catch (error) {
     throw error.response?.data?.message || "Lỗi lấy danh sách món ăn";
-  }
-};
-
-export const tao_qr_service = async (hoaDonId) => {
-  try {
-    const res = await apiClient.post("/phuc-vu/hoa-don/" + hoaDonId + "/qr");
-    return res.data;
-  } catch (error) {
-    throw error.response?.data?.message || "Không tạo được QR.";
   }
 };

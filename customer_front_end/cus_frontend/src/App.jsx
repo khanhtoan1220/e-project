@@ -12,9 +12,11 @@ import Footer from "./components/Footer";
 import Reservation from "./pages/Reservation";
 import TableMenu from "./pages/TableMenu";
 import OrderTracking from "./pages/OrderTracking";
+import api from "./services/api";
 
 function App() {
-  const [page, setPage] = useState("home");
+  const banIdQr = new URLSearchParams(window.location.search).get("banId");
+  const [page, setPage] = useState(() => banIdQr ? "order" : "home");
 
   const [selectedCategoryId, setSelectedCategoryId] =
     useState(null);
@@ -22,6 +24,36 @@ function App() {
   const [cart, setCart] = useState([]);
 
   const [message, setMessage] = useState("");
+  const [minGia, setMinGia] = useState("");
+  const [maxGia, setMaxGia] = useState("");
+  const [searchMenu, setSearchMenu] = useState("");
+  const [monBanChay, setMonBanChay] = useState([]);
+  const coBanQr = Boolean(banIdQr);
+
+  useEffect(() => {
+    let dangTai = true;
+    const taiMonBanChay = async () => {
+      try {
+        const [thongKe, thucDon] = await Promise.all([
+          api.get("/khach-hang/mon-ban-chay"),
+          api.get("/thuc-don/mon-an", { params: { conBan: true } }),
+        ]);
+        if (!dangTai) return;
+        const monAn = Array.isArray(thucDon.data) ? thucDon.data : [];
+        setMonBanChay((Array.isArray(thongKe.data) ? thongKe.data : [])
+          .map((item) => ({
+            ...item,
+            mon: monAn.find((mon) => mon.ten === item._id),
+          }))
+          .filter((item) => item.mon)
+          .slice(0, 3));
+      } catch {
+        if (dangTai) setMonBanChay([]);
+      }
+    };
+    taiMonBanChay();
+    return () => { dangTai = false; };
+  }, []);
 
   const cartCount = useMemo(
     () =>
@@ -141,6 +173,7 @@ function App() {
         cartCount={cartCount}
         currentPage={page}
         onNavigate={setPage}
+        hasTable={coBanQr}
       />
 
       {message && (
@@ -152,52 +185,53 @@ function App() {
       <main>
         {page === "home" && (
           <>
-            <section className="hero">
+            <section className="hero home-hero">
               <div className="hero-content">
                 <p className="eyebrow">
-                  NGON TỪ TÂM
+                  NHÀ HÀNG NGON NHÀ · PHỤC VỤ TẬN TÂM
                 </p>
 
                 <h1>
-                  Món ngon mỗi ngày,
-                  phục vụ tận tâm
+                  Bữa ngon trọn vị,
+                  phút giây đáng nhớ
                 </h1>
 
                 <p>
-                  Khám phá thực đơn và gọi món
-                  trực tiếp từ hệ thống nhà hàng.
+                  Thưởng thức món Việt được chuẩn bị mỗi ngày trong không gian ấm cúng dành cho gia đình và bạn bè.
                 </p>
 
                 <button
                   type="button"
-                  onClick={() =>
-                    setPage("menu")
-                  }
+                  onClick={() => setPage("booking")}
                 >
+                  Đặt bàn ngay
+                </button>
+                <button className="hero-secondary-button" type="button" onClick={() => setPage("menu")}>
                   Xem thực đơn
                 </button>
               </div>
             </section>
 
             <section className="home-section">
-              <h2>
-                Khám phá thực đơn
-              </h2>
-
-              <p>
-                Chọn danh mục để xem những món
-                đang còn bán.
-              </p>
-
-              <Category
-                selectedCategoryId={
-                  selectedCategoryId
-                }
-                onSelectCategory={(id) => {
-                  setSelectedCategoryId(id);
-                  setPage("menu");
-                }}
-              />
+              <div className="home-intro-grid">
+                <article><span>ĐỊA CHỈ</span><strong>Hà Nội, Việt Nam</strong></article>
+                <article><span>HOTLINE</span><strong>0123 456 789</strong></article>
+                <article><span>GIỜ MỞ CỬA</span><strong>09:00 – 22:00</strong></article>
+              </div>
+              <div className="section-heading">
+                <div><span className="page-label">ĐƯỢC YÊU THÍCH</span><h2>Món bán chạy</h2></div>
+                <button type="button" className="text-button" onClick={() => setPage("menu")}>Xem toàn bộ thực đơn</button>
+              </div>
+              {monBanChay.length ? (
+                <div className="featured-grid">
+                  {monBanChay.map((item) => (
+                    <article className="featured-card" key={item._id}>
+                      {item.mon.hinhAnh && <img src={item.mon.hinhAnh} alt={item.mon.ten} />}
+                      <div><span>ĐÃ BÁN {item.soLuongDaBan} PHẦN</span><h3>{item.mon.ten}</h3><strong>{Number(item.mon.gia).toLocaleString("vi-VN")} đ</strong></div>
+                    </article>
+                  ))}
+                </div>
+              ) : <p className="muted-copy">Món nổi bật sẽ hiển thị tại đây.</p>}
             </section>
           </>
         )}
@@ -207,6 +241,14 @@ function App() {
             <h1>
               Thực đơn
             </h1>
+
+            <p className="public-menu-intro">Tham khảo món ăn và giá trước khi ghé nhà hàng. Quý khách có thể đặt bàn trực tuyến.</p>
+
+            <div className="public-menu-filters">
+              <label className="public-menu-search">Tìm món<input type="search" value={searchMenu} onChange={(event) => setSearchMenu(event.target.value)} placeholder="Nhập tên món ăn" /></label>
+              <label>Giá từ<input type="number" min="0" value={minGia} onChange={(event) => setMinGia(event.target.value)} placeholder="0 đ" /></label>
+              <label>Đến<input type="number" min="0" value={maxGia} onChange={(event) => setMaxGia(event.target.value)} placeholder="Không giới hạn" /></label>
+            </div>
 
             <Category
               selectedCategoryId={
@@ -221,9 +263,9 @@ function App() {
               selectedCategoryId={
                 selectedCategoryId
               }
-              onAddToCart={
-                addToCart
-              }
+              searchKeyword={searchMenu}
+              minGia={minGia}
+              maxGia={maxGia}
             />
           </section>
         )}
@@ -249,6 +291,7 @@ function App() {
         {page === "checkout" && (
           <Checkout
             cart={cart}
+            banId={banIdQr}
             onBack={() =>
               setPage("cart")
             }
@@ -265,7 +308,7 @@ function App() {
         )}
 
         {page === "support" && (
-          <Support />
+          <Support banId={banIdQr} />
         )}
 
         {page === "reservation" && (
@@ -273,7 +316,7 @@ function App() {
         )}
 
         {page === "order" && (
-          <TableMenu />
+          <TableMenu banId={banIdQr} />
         )}
 
         {page === "order-tracking" && (

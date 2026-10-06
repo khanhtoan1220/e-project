@@ -10,7 +10,7 @@ function Category({ selectedCategoryId, onSelectCategory }) {
       try {
         setError("");
 
-        const response = await api.get("/category");
+        const response = await api.get("/thuc-don/danh-muc");
 
         setCategories(
           Array.isArray(response.data) ? response.data : []
@@ -57,7 +57,7 @@ function Category({ selectedCategoryId, onSelectCategory }) {
             onSelectCategory(category._id)
           }
         >
-          {category.name}
+          {category.ten}
         </button>
       ))}
     </div>

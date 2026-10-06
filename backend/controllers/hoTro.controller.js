@@ -11,7 +11,7 @@ exports.guiYeuCau = async (req, res) => {
       return res.status(404).json({ message: "Không tìm thấy bàn này" });
     }
 
-    if (ban.trangThai !== "dangSuDung") {
+    if (ban.trangThai !== "dangSuDung" || String(ban.hoaDon) !== String(req.hoaDonKhach._id)) {
       return res.status(403).json({
         message: "Bàn này hiện không hoạt động, không thể gửi yêu cầu hỗ trợ!",
       });

@@ -42,7 +42,7 @@ export default function StaffLayout() {
     };
 
     let channel;
-    if (state.user?.vaiTro === "phucVu") {
+    if (["admin", "phucVu"].includes(state.user?.vaiTro)) {
       channel = pusher.subscribe("nhan-vien-channel");
       channel.bind("yeu-cau-moi", thongBao);
       channel.bind("dat-ban-moi", thongBao);
@@ -73,6 +73,8 @@ export default function StaffLayout() {
                 <Nav.Link as={NavLink} to="/phuc-vu">Bàn ăn & gọi món</Nav.Link>}
               {["admin", "bep"].includes(state.user.vaiTro) &&
                 <Nav.Link as={NavLink} to="/nha-bep">Nhà bếp</Nav.Link>}
+              {["admin", "phucVu"].includes(state.user.vaiTro) &&
+                <Nav.Link as={NavLink} to="/yeu-cau-ho-tro">Yêu cầu hỗ trợ</Nav.Link>}
             </Nav>
             <Nav className="align-items-lg-center gap-3">
               <Navbar.Text className="text-secondary small">

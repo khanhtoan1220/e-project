@@ -1,10 +1,7 @@
 import { useState } from "react";
 import api from "../services/api";
 
-function Checkout({ cart, onBack, onSuccess }) {
-  const [hoaDonId, setHoaDonId] = useState(
-    () => localStorage.getItem("hoaDonId") || ""
-  );
+function Checkout({ cart, banId, onBack, onSuccess }) {
   const [notes, setNotes] = useState({});
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
@@ -22,8 +19,8 @@ function Checkout({ cart, onBack, onSuccess }) {
     event.preventDefault();
     setError("");
 
-    if (!hoaDonId.trim()) {
-      setError("Vui lòng nhập mã hóa đơn do nhân viên cung cấp.");
+    if (!banId) {
+      setError("Hãy quét mã QR cố định trên bàn trước khi gọi món.");
       return;
     }
 
@@ -41,12 +38,9 @@ function Checkout({ cart, onBack, onSuccess }) {
     try {
       setLoading(true);
 
-      const response = await api.post("/phuc-vu/goi-mon", {
-        hoaDonId: hoaDonId.trim(),
+      const response = await api.post(`/khach-hang/ban/${banId}/goi-mon`, {
         chonMon
       });
-
-      localStorage.setItem("hoaDonId", hoaDonId.trim());
 
       onSuccess(
         response.data?.message || "Gọi món thành công. Món ăn đã được gửi tới bếp."
@@ -55,7 +49,7 @@ function Checkout({ cart, onBack, onSuccess }) {
       console.error(error);
       setError(
         error.response?.data?.message ||
-          "Không thể gửi món. Hãy kiểm tra mã hóa đơn và trạng thái bàn."
+          "Không thể gửi món. Hãy quét lại mã QR trên bàn."
       );
     } finally {
       setLoading(false);
@@ -68,15 +62,8 @@ function Checkout({ cart, onBack, onSuccess }) {
 
       <div className="checkout-grid">
         <form className="form-card" onSubmit={submitOrder}>
-          <label>Mã hóa đơn</label>
-          <input
-            value={hoaDonId}
-            onChange={(event) => setHoaDonId(event.target.value)}
-            placeholder="Nhập mã hóa đơn"
-            required
-          />
           <p className="hint">
-            Backend hiện yêu cầu hóa đơn đã được mở trước bởi nhân viên phục vụ.
+            Bàn được nhận diện từ mã QR cố định; món sẽ được cộng vào hóa đơn đang mở của bàn.
           </p>
 
           <h3>Ghi chú từng món</h3>

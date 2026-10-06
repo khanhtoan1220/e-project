@@ -1,4 +1,4 @@
-function Header({ cartCount, currentPage, onNavigate }) {
+function Header({ cartCount, currentPage, onNavigate, hasTable }) {
   return (
     <header className="header">
       <div className="container header-inner">
@@ -14,13 +14,13 @@ function Header({ cartCount, currentPage, onNavigate }) {
           <button className={currentPage === "home" ? "nav-active" : ""} onClick={() => onNavigate("home")}>Trang chủ</button>
           <button className={currentPage === "menu" ? "nav-active" : ""} onClick={() => onNavigate("menu")}>Thực đơn</button>
           <button className={currentPage === "booking" ? "nav-active" : ""} onClick={() => onNavigate("booking")}>Đặt bàn</button>
-          <button className={currentPage === "support" ? "nav-active" : ""} onClick={() => onNavigate("support")}>Hỗ trợ</button>
+          {hasTable && <button className={currentPage === "support" ? "nav-active" : ""} onClick={() => onNavigate("support")}>Hỗ trợ</button>}
         </nav>
 
-        <button className="cart-header" onClick={() => onNavigate("cart")}>
+        {hasTable && cartCount > 0 && <button className="cart-header" onClick={() => onNavigate("cart")}>
           🛒 Giỏ hàng
           <span>{cartCount}</span>
-        </button>
+        </button>}
       </div>
     </header>
   );

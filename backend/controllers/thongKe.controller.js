@@ -44,6 +44,7 @@ exports.getXepHangMon = async (req, res) => {
     const list = await HoaDon.aggregate([
       { $match: { trangThai: "daThanhToan" } },
       { $unwind: "$danhSachMon" }, // Trải phẳng mảng món ăn
+      { $match: { "danhSachMon.trangThaiMon": { $ne: "daHuy" } } },
       {
         $group: {
           _id: "$danhSachMon.ten",

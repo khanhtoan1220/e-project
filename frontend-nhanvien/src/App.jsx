@@ -8,6 +8,7 @@ import StaffLayout from "./components/layout/StaffLayout";
 import Login from "./pages/Login";
 import PhucVu from "./pages/PhucVu";
 import NhaBep from "./pages/NhaBep";
+import YeuCauHoTro from "./pages/YeuCauHoTro";
 
 // Import CSS Bootstrap
 import "bootstrap/dist/css/bootstrap.min.css";
@@ -42,6 +43,7 @@ function App() {
 
           {/* Trang Nhà bếp */}
           <Route path="nha-bep" element={<NhaBep />} />
+          <Route path="yeu-cau-ho-tro" element={<YeuCauHoTro />} />
         </Route>
 
         {/* Chuyển hướng các đường dẫn lạ về trang chủ */}
