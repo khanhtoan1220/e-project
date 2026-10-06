@@ -9,13 +9,13 @@ import {
   Row,
   Col,
   InputGroup,
-  Card
+  Card,
 } from "react-bootstrap";
 import {
   get_nhanvien_service,
   create_nhanvien_service,
   delete_nhanvien_service,
-  reset_matkhau_service
+  reset_matkhau_service,
 } from "../services/quantri_service";
 import { useAppContext } from "../hooks/context";
 
@@ -107,7 +107,9 @@ export default function NhanVien() {
       setError("");
       setMsg("");
       await reset_matkhau_service(selectedUser._id, matKhauMoi);
-      setMsg(`Đặt lại mật khẩu thành công cho nhân viên ${selectedUser.hoTen}!`);
+      setMsg(
+        `Đặt lại mật khẩu thành công cho nhân viên ${selectedUser.hoTen}!`,
+      );
       setShowResetModal(false);
       setMatKhauMoi("");
       setSelectedUser(null);
@@ -121,227 +123,356 @@ export default function NhanVien() {
       case "admin":
         return <Badge bg="danger">Quản trị viên</Badge>;
       case "bep":
-        return <Badge bg="warning" text="dark">Đầu bếp</Badge>;
+        return (
+          <Badge bg="warning" text="dark">
+            Đầu bếp
+          </Badge>
+        );
       case "phucVu":
-        return <Badge bg="info" text="dark">Phục vụ</Badge>;
+        return (
+          <Badge bg="info" text="dark">
+            Phục vụ
+          </Badge>
+        );
       default:
         return <Badge bg="secondary">{role}</Badge>;
     }
   };
 
   return (
-    <div>
+    <div className="admin-page">
       {/* Tiêu đề & Nút Thêm mới */}
-      <div className="d-flex justify-content-between align-items-center mb-4">
+      <div className="page-heading">
         <div>
-          <h2 className="fw-bold text-dark">👥 Quản Lý Nhân Viên</h2>
-          <p className="text-secondary mb-0">Tạo tài khoản và phân quyền cho nhân viên nhà hàng</p>
+          <h1 className="h4 fw-bold text-dark mb-1">Nhân viên</h1>
+          <div className="text-muted small">
+            Cấp tài khoản và quản lý phân quyền cho nhân sự quán
+          </div>
         </div>
-        <Button variant="primary" className="fw-bold" onClick={() => setShowAddModal(true)}>
-          + Thêm Nhân Viên
+        <Button
+          variant="dark"
+          size="sm"
+          className="fw-semibold rounded-1 px-3"
+          onClick={() => setShowAddModal(true)}
+        >
+          + Thêm nhân viên
         </Button>
       </div>
 
       {/* Thông báo thành công / thất bại */}
-      {msg && <div className="alert alert-success alert-dismissible fade show py-2 px-3 small" role="alert">{msg}</div>}
-      {error && <div className="alert alert-danger alert-dismissible fade show py-2 px-3 small" role="alert">{error}</div>}
+      {msg && (
+        <div
+          className="alert alert-success alert-dismissible fade show py-2 px-3 small"
+          role="alert"
+        >
+          {msg}
+        </div>
+      )}
+      {error && (
+        <div
+          className="alert alert-danger alert-dismissible fade show py-2 px-3 small"
+          role="alert"
+        >
+          {error}
+        </div>
+      )}
 
       {/* Khung lọc & tìm kiếm */}
-      <Card className="shadow-sm border-0 rounded-3 mb-4">
-        <Card.Body className="p-3">
-          <Form onSubmit={handleSearchSubmit}>
-            <Row className="g-3 align-items-center">
-              <Col md={5}>
-                <InputGroup>
-                  <Form.Control
-                    placeholder="Tìm theo họ tên, tên đăng nhập..."
-                    value={search}
-                    onChange={(e) => setSearch(e.target.value)}
-                  />
-                  <Button variant="secondary" type="submit">
-                    Tìm kiếm
-                  </Button>
-                </InputGroup>
-              </Col>
-              
-              <Col md={3}>
-                <Form.Select
-                  value={vaiTroFilter}
-                  onChange={(e) => setVaiTroFilter(e.target.value)}
-                >
-                  <option value="">Tất cả vai trò</option>
-                  <option value="admin">Quản trị viên</option>
-                  <option value="phucVu">Phục vụ</option>
-                  <option value="bep">Đầu bếp</option>
-                </Form.Select>
-              </Col>
+      <div className="border border-light-subtle rounded-1 bg-white p-3 mb-3">
+        <Form onSubmit={handleSearchSubmit}>
+          <Row className="g-2 align-items-center">
+            <Col md={4}>
+              <Form.Control
+                size="sm"
+                className="rounded-1"
+                placeholder="Họ tên, tên đăng nhập..."
+                value={search}
+                onChange={(e) => setSearch(e.target.value)}
+              />
+            </Col>
 
-              <Col md={4} className="text-md-end">
-                <Button 
-                  variant="outline-secondary"
-                  onClick={() => {
-                    setSearch("");
-                    setVaiTroFilter("");
-                    // Cần reset dữ liệu về nguyên bản
-                    setTimeout(() => loadData(), 50);
-                  }}
-                >
-                  Đặt lại lọc
-                </Button>
-              </Col>
-            </Row>
-          </Form>
-        </Card.Body>
-      </Card>
+            <Col md={3}>
+              <Form.Select
+                size="sm"
+                className="rounded-1"
+                value={vaiTroFilter}
+                onChange={(e) => setVaiTroFilter(e.target.value)}
+              >
+                <option value="">Tất cả vai trò</option>
+                <option value="admin">Quản trị viên</option>
+                <option value="phucVu">Phục vụ bàn</option>
+                <option value="bep">Đầu bếp</option>
+              </Form.Select>
+            </Col>
+
+            <Col md={5} className="d-flex gap-2 justify-content-md-end">
+              <Button
+                variant="dark"
+                size="sm"
+                className="fw-semibold rounded-1 px-3"
+                type="submit"
+              >
+                Tìm kiếm
+              </Button>
+              <Button
+                variant="outline-secondary"
+                size="sm"
+                className="rounded-1"
+                onClick={() => {
+                  setSearch("");
+                  setVaiTroFilter("");
+                  setTimeout(() => loadData(), 50);
+                }}
+              >
+                Xóa bộ lọc
+              </Button>
+            </Col>
+          </Row>
+        </Form>
+      </div>
 
       {/* Danh sách nhân viên */}
-      <Card className="shadow-sm border-0 rounded-3">
-        <Card.Body className="p-0">
-          {loading ? (
-            <div className="text-center py-5">
-              <Spinner animation="border" variant="primary" />
-              <p className="text-secondary mt-2 mb-0">Đang tải danh sách nhân viên...</p>
-            </div>
-          ) : list.length === 0 ? (
-            <div className="text-center py-5 text-secondary">
-              Không tìm thấy nhân viên nào phù hợp.
-            </div>
-          ) : (
-            <Table hover responsive className="align-middle mb-0">
-              <thead className="table-light">
-                <tr>
-                  <th className="px-4 py-3" style={{ width: "80px" }}>#</th>
-                  <th className="py-3">Họ và Tên</th>
-                  <th className="py-3">Tên Đăng Nhập</th>
-                  <th className="py-3">Vai Trò</th>
-                  <th className="py-3" style={{ width: "150px" }}>Ngày Tạo</th>
-                  <th className="py-3 text-end px-4" style={{ width: "300px" }}>Thao Tác</th>
+      <div className="border border-light-subtle rounded-1 bg-white mb-4">
+        {loading ? (
+          <div className="text-center py-5">
+            <Spinner animation="border" variant="primary" />
+            <p className="text-secondary mt-2 mb-0">
+              Đang tải danh sách nhân viên...
+            </p>
+          </div>
+        ) : list.length === 0 ? (
+          <div className="text-center py-5 text-secondary">
+            Không tìm thấy nhân viên nào phù hợp.
+          </div>
+        ) : (
+          <Table hover responsive className="align-middle mb-0 table-sm">
+            <thead className="table-light border-bottom">
+              <tr>
+                <th
+                  className="px-3 py-2 text-muted fw-semibold small"
+                  style={{ width: "60px" }}
+                >
+                  #
+                </th>
+                <th className="py-2 text-muted fw-semibold small">Họ và tên</th>
+                <th className="py-2 text-muted fw-semibold small">
+                  Tên đăng nhập
+                </th>
+                <th
+                  className="py-2 text-muted fw-semibold small"
+                  style={{ width: "150px" }}
+                >
+                  Vai trò
+                </th>
+                <th
+                  className="py-2 text-muted fw-semibold small"
+                  style={{ width: "120px" }}
+                >
+                  Ngày tạo
+                </th>
+                <th
+                  className="py-2 text-muted fw-semibold text-end px-3 small"
+                  style={{ width: "220px" }}
+                >
+                  Thao tác
+                </th>
+              </tr>
+            </thead>
+            <tbody>
+              {list.map((user, idx) => (
+                <tr key={user._id} className="border-bottom last-border-0">
+                  <td className="px-3 py-2 text-secondary small">{idx + 1}</td>
+                  <td className="py-2 fw-semibold text-dark small">
+                    {user.hoTen}
+                  </td>
+                  <td className="py-2 text-secondary small">
+                    {user.tenDangNhap}
+                  </td>
+                  <td className="py-2 small">{translateRole(user.vaiTro)}</td>
+                  <td className="py-2 text-secondary small">
+                    {new Date(user.createdAt).toLocaleDateString("vi-VN")}
+                  </td>
+                  <td className="py-2 text-end px-3">
+                    <Button
+                      variant="link"
+                      size="sm"
+                      className="me-3 text-primary p-0 text-decoration-none small fw-semibold"
+                      onClick={() => {
+                        setSelectedUser(user);
+                        setShowResetModal(true);
+                      }}
+                    >
+                      Đặt lại mật khẩu
+                    </Button>
+                    <Button
+                      variant="link"
+                      size="sm"
+                      className="text-danger p-0 text-decoration-none small fw-semibold"
+                      disabled={user._id === state.user?.id}
+                      onClick={() => handleDelete(user._id, user.hoTen)}
+                    >
+                      Xóa
+                    </Button>
+                  </td>
                 </tr>
-              </thead>
-              <tbody>
-                {list.map((user, idx) => (
-                  <tr key={user._id}>
-                    <td className="px-4 py-3 text-secondary">{idx + 1}</td>
-                    <td className="py-3 fw-bold text-dark">{user.hoTen}</td>
-                    <td className="py-3 text-monospace">{user.tenDangNhap}</td>
-                    <td className="py-3">{translateRole(user.vaiTro)}</td>
-                    <td className="py-3 text-secondary">
-                      {new Date(user.createdAt).toLocaleDateString("vi-VN")}
-                    </td>
-                    <td className="py-3 text-end px-4">
-                      <Button 
-                        variant="outline-primary" 
-                        size="sm"
-                        className="me-2 fw-semibold"
-                        onClick={() => {
-                          setSelectedUser(user);
-                          setShowResetModal(true);
-                        }}
-                      >
-                        🔑 Reset mật khẩu
-                      </Button>
-                      <Button 
-                        variant="outline-danger" 
-                        size="sm"
-                        className="fw-semibold"
-                        disabled={user._id === state.user?.id}
-                        onClick={() => handleDelete(user._id, user.hoTen)}
-                      >
-                        🗑️ Xóa
-                      </Button>
-                    </td>
-                  </tr>
-                ))}
-              </tbody>
-            </Table>
-          )}
-        </Card.Body>
-      </Card>
+              ))}
+            </tbody>
+          </Table>
+        )}
+      </div>
 
       {/* Modal Thêm Nhân Viên */}
-      <Modal show={showAddModal} onHide={() => setShowAddModal(false)} backdrop="static">
+      <Modal
+        show={showAddModal}
+        onHide={() => setShowAddModal(false)}
+        backdrop="static"
+        contentClassName="rounded-1 border-0"
+      >
         <Form onSubmit={handleCreate}>
-          <Modal.Header closeButton>
-            <Modal.Title className="fw-bold text-dark">Thêm Tài Khoản Nhân Viên Mới</Modal.Title>
+          <Modal.Header closeButton className="py-2 px-3 border-bottom">
+            <Modal.Title className="fs-6 fw-bold text-dark">
+              Thêm nhân viên mới
+            </Modal.Title>
           </Modal.Header>
-          <Modal.Body>
+          <Modal.Body className="p-3">
             <Form.Group className="mb-3">
-              <Form.Label className="fw-semibold text-secondary">Họ và tên nhân viên</Form.Label>
+              <Form.Label className="fw-semibold text-secondary small">
+                Họ và tên nhân viên
+              </Form.Label>
               <Form.Control
                 required
-                placeholder="VD: Nguyễn Văn A..."
+                className="rounded-1 form-control-sm"
+                placeholder="Nguyễn Văn A..."
                 value={hoTen}
                 onChange={(e) => setHoTen(e.target.value)}
               />
             </Form.Group>
 
             <Form.Group className="mb-3">
-              <Form.Label className="fw-semibold text-secondary">Tên đăng nhập (viết liền, không dấu)</Form.Label>
+              <Form.Label className="fw-semibold text-secondary small">
+                Tên đăng nhập
+              </Form.Label>
               <Form.Control
                 required
-                placeholder="VD: nguyenvana..."
+                className="rounded-1 form-control-sm"
+                placeholder="nguyenvana..."
                 value={tenDangNhap}
-                onChange={(e) => setTenDangNhap(e.target.value.toLowerCase().replace(/\s/g, ""))}
+                onChange={(e) =>
+                  setTenDangNhap(
+                    e.target.value.toLowerCase().replace(/\s/g, ""),
+                  )
+                }
               />
             </Form.Group>
 
             <Form.Group className="mb-3">
-              <Form.Label className="fw-semibold text-secondary">Mật khẩu khởi tạo</Form.Label>
+              <Form.Label className="fw-semibold text-secondary small">
+                Mật khẩu khởi tạo
+              </Form.Label>
               <Form.Control
                 type="password"
                 required
-                placeholder="Nhập mật khẩu (ít nhất 6 ký tự)..."
+                className="rounded-1 form-control-sm"
+                placeholder="Ít nhất 6 ký tự..."
                 value={matKhau}
                 onChange={(e) => setMatKhau(e.target.value)}
                 minLength={6}
               />
             </Form.Group>
 
-            <Form.Group className="mb-3">
-              <Form.Label className="fw-semibold text-secondary">Vai Trò / Phân Quyền</Form.Label>
+            <Form.Group className="mb-2">
+              <Form.Label className="fw-semibold text-secondary small">
+                Vai trò / Phân quyền
+              </Form.Label>
               <Form.Select
+                className="rounded-1 form-select-sm"
                 value={vaiTro}
                 onChange={(e) => setVaiTro(e.target.value)}
               >
-                <option value="phucVu">Phục vụ bàn (phucVu)</option>
-                <option value="bep">Nhà bếp / Đầu bếp (bep)</option>
-                <option value="admin">Quản trị hệ thống (admin)</option>
+                <option value="phucVu">Phục vụ bàn</option>
+                <option value="bep">Nhà bếp / Đầu bếp</option>
+                <option value="admin">Quản trị hệ thống</option>
               </Form.Select>
             </Form.Group>
           </Modal.Body>
-          <Modal.Footer>
-            <Button variant="secondary" onClick={() => setShowAddModal(false)}>Hủy</Button>
-            <Button variant="primary" type="submit" className="fw-bold">+ Lưu Nhân Viên</Button>
+          <Modal.Footer className="py-2 px-3 border-top">
+            <Button
+              variant="outline-secondary"
+              size="sm"
+              className="rounded-1 px-3"
+              onClick={() => setShowAddModal(false)}
+            >
+              Hủy
+            </Button>
+            <Button
+              variant="dark"
+              size="sm"
+              type="submit"
+              className="fw-semibold rounded-1 px-3"
+            >
+              Thêm nhân viên
+            </Button>
           </Modal.Footer>
         </Form>
       </Modal>
 
       {/* Modal Đặt lại Mật khẩu */}
-      <Modal show={showResetModal} onHide={() => { setShowResetModal(false); setSelectedUser(null); }} backdrop="static">
+      <Modal
+        show={showResetModal}
+        onHide={() => {
+          setShowResetModal(false);
+          setSelectedUser(null);
+        }}
+        backdrop="static"
+        contentClassName="rounded-1 border-0"
+      >
         {selectedUser && (
           <Form onSubmit={handleResetPasswordSubmit}>
-            <Modal.Header closeButton>
-              <Modal.Title className="fw-bold text-dark">Đặt Lại Mật Khẩu</Modal.Title>
+            <Modal.Header closeButton className="py-2 px-3 border-bottom">
+              <Modal.Title className="fs-6 fw-bold text-dark">
+                Đặt lại mật khẩu
+              </Modal.Title>
             </Modal.Header>
-            <Modal.Body>
-              <p>
-                Đặt lại mật khẩu cho nhân viên: <strong>{selectedUser.hoTen}</strong> ({selectedUser.tenDangNhap})
+            <Modal.Body className="p-3">
+              <p className="small mb-3">
+                Đặt lại mật khẩu cho nhân viên:{" "}
+                <strong className="text-dark">{selectedUser.hoTen}</strong>
               </p>
-              <Form.Group className="mb-3">
-                <Form.Label className="fw-semibold text-secondary">Mật khẩu mới</Form.Label>
+              <Form.Group className="mb-2">
+                <Form.Label className="fw-semibold text-secondary small">
+                  Mật khẩu mới
+                </Form.Label>
                 <Form.Control
                   type="password"
                   required
-                  placeholder="Nhập mật khẩu mới (ít nhất 6 ký tự)..."
+                  className="rounded-1 form-control-sm"
+                  placeholder="Nhập ít nhất 6 ký tự..."
                   value={matKhauMoi}
                   onChange={(e) => setMatKhauMoi(e.target.value)}
                   minLength={6}
                 />
               </Form.Group>
             </Modal.Body>
-            <Modal.Footer>
-              <Button variant="secondary" onClick={() => { setShowResetModal(false); setSelectedUser(null); }}>Hủy</Button>
-              <Button variant="danger" type="submit" className="fw-bold">Xác nhận Đổi</Button>
+            <Modal.Footer className="py-2 px-3 border-top">
+              <Button
+                variant="outline-secondary"
+                size="sm"
+                className="rounded-1 px-3"
+                onClick={() => {
+                  setShowResetModal(false);
+                  setSelectedUser(null);
+                }}
+              >
+                Hủy
+              </Button>
+              <Button
+                variant="dark"
+                size="sm"
+                type="submit"
+                className="fw-semibold rounded-1 px-3"
+              >
+                Đặt lại
+              </Button>
             </Modal.Footer>
           </Form>
         )}

@@ -44,16 +44,16 @@ export default function Login() {
   };
 
   return (
-    <div className="bg-light-gray min-vh-100 d-flex align-items-center justify-content-center">
+    <div className="login-page min-vh-100 d-flex align-items-center justify-content-center">
       <Container>
         <div className="d-flex justify-content-center">
-          <Card className="shadow border-0 rounded-4 overflow-hidden" style={{ width: "420px" }}>
-            <div className="bg-primary text-white text-center py-4 px-3">
-              <h3 className="fw-bold mb-1">🍽️ RESTAURANT</h3>
-              <p className="text-white-50 mb-0">Hệ Thống Quản Trị Nhà Hàng</p>
+          <Card className="login-card" style={{ width: "420px" }}>
+            <div className="login-heading">
+              <h1 className="fw-semibold mb-2">Bếp Nhà</h1>
+              <p className="mb-0">Quản lý nhà hàng</p>
             </div>
             <Card.Body className="p-4">
-              <h4 className="text-center mb-4 fw-bold text-dark">ĐĂNG NHẬP</h4>
+              <h4 className="mb-4 fw-semibold text-dark">Đăng nhập</h4>
               
               {error && <Alert variant="danger" className="py-2 px-3 small">{error}</Alert>}
               
@@ -87,7 +87,7 @@ export default function Login() {
                 <Button 
                   variant="primary" 
                   type="submit" 
-                  className="w-100 py-2.5 fw-bold shadow-sm"
+                  className="w-100 py-2 fw-semibold"
                   disabled={isSubmitting}
                 >
                   {isSubmitting ? (
@@ -96,13 +96,13 @@ export default function Login() {
                       Đang đăng nhập...
                     </>
                   ) : (
-                    "Đăng Nhập"
+                    "Đăng nhập"
                   )}
                 </Button>
               </Form>
             </Card.Body>
             <div className="card-footer text-center bg-white border-0 py-3 text-secondary small">
-              Nhân viên phục vụ/nhà bếp đăng nhập trên ứng dụng Tablet.
+              Dành cho tài khoản quản trị.
             </div>
           </Card>
         </div>

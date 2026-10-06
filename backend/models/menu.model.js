@@ -31,6 +31,10 @@ const menuSchema = new mongoose.Schema(
       type: Boolean,
       default: true,
     },
+    canNao: {
+      type: Boolean,
+      default: true, // Mặc định là cần nấu, chỉ đồ uống/đồ ăn liền mới tích false
+    },
     dinhLuong: [dinhLuongSchema],
   },
   {

@@ -93,14 +93,20 @@ exports.huyHoaDon = async (req, res) => {
         .json({ message: "Không thể hủy hóa đơn đã thanh toán thành công" });
     }
 
-    hoaDon.trangThai = "daHuy";
-    await hoaDon.save();
-
-    await BanAn.findByIdAndUpdate(hoaDon.banId, { trangThai: "trong" });
+    const daHuy = await HoaDon.findOneAndUpdate(
+      { _id: hoaDon._id, trangThai: "chuaThanhToan" },
+      { trangThai: "daHuy", thoiGianRa: new Date(), qrTokenHash: null, qrHetHan: null },
+      { new: true },
+    );
+    if (!daHuy) return res.status(409).json({ message: "Hóa đơn đã kết thúc." });
+    await BanAn.findOneAndUpdate(
+      { _id: daHuy.banId, hoaDon: daHuy._id },
+      { trangThai: "choDonDep", hoaDon: null },
+    );
 
     res.json({
-      message: "Hủy hóa đơn và giải phóng bàn thành công",
-      data: hoaDon,
+      message: "Đã hủy hóa đơn, bàn chuyển sang chờ dọn",
+      data: daHuy,
     });
   } catch (error) {
     res.status(400).json({ message: error.message });

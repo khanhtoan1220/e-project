@@ -4,7 +4,8 @@ const phucVuController = require("../controllers/phucVu.controller");
 const { checkAuth, checkRole } = require("../middlewares/checkAuth");
 const hoTroController = require("../controllers/hoTro.controller");
 
-router.post("/goi-mon", phucVuController.goiMon);
+router.post("/goi-mon", checkAuth, checkRole(["admin", "phucVu"]), phucVuController.goiMon);
+router.post("/hoa-don/:hoaDonId/qr", checkAuth, checkRole(["admin", "phucVu"]), phucVuController.taoQr);
 
 router.get(
   "/so-do-ban",
@@ -53,6 +54,20 @@ router.post(
   checkAuth,
   checkRole(["admin", "phucVu"]),
   phucVuController.chuyenBan,
+);
+
+router.post(
+  "/duyet-mon",
+  checkAuth,
+  checkRole(["admin", "phucVu"]),
+  phucVuController.duyetMonAnKhachGoi,
+);
+
+router.patch(
+  "/cap-nhat-bung-mon",
+  checkAuth,
+  checkRole(["admin", "phucVu"]),
+  phucVuController.xacNhanPhucVuMon,
 );
 
 module.exports = router;

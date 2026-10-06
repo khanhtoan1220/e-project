@@ -16,18 +16,18 @@ export default function AdminLayout() {
   }
 
   return (
-    <div className="d-flex flex-column vh-100 overflow-hidden">
+    <div className="admin-shell">
       {/* Header */}
       <AdminHeader />
       
       {/* Body */}
-      <div className="d-flex flex-grow-1 overflow-hidden">
+      <div className="admin-body">
         {/* Sidebar */}
         <AdminSidebar />
         
         {/* Main Content Area */}
-        <main className="flex-grow-1 bg-light overflow-auto p-4">
-          <div className="container-fluid">
+        <main className="admin-main">
+          <div className="admin-content">
             <Outlet />
           </div>
         </main>

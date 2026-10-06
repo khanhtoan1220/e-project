@@ -1,17 +1,10 @@
 import React, { useEffect, useState } from "react";
-import {
-  Table,
-  Button,
-  Modal,
-  Form,
-  Spinner,
-  Card
-} from "react-bootstrap";
+import { Table, Button, Modal, Form, Spinner, Card } from "react-bootstrap";
 import {
   get_danhmuc_service,
   create_danhmuc_service,
   update_danhmuc_service,
-  delete_danhmuc_service
+  delete_danhmuc_service,
 } from "../services/quantri_service";
 
 export default function DanhMuc() {
@@ -85,7 +78,11 @@ export default function DanhMuc() {
   };
 
   const handleDelete = async (id, tenDanhMuc) => {
-    if (window.confirm(`Bạn có chắc chắn muốn xóa danh mục "${tenDanhMuc}"?\nLưu ý: Hành động này có thể ảnh hưởng đến các món ăn thuộc danh mục này.`)) {
+    if (
+      window.confirm(
+        `Bạn có chắc chắn muốn xóa danh mục "${tenDanhMuc}"?\nLưu ý: Hành động này có thể ảnh hưởng đến các món ăn thuộc danh mục này.`,
+      )
+    ) {
       try {
         setError("");
         setMsg("");
@@ -99,114 +96,182 @@ export default function DanhMuc() {
   };
 
   return (
-    <div>
+    <div className="admin-page">
       {/* Tiêu đề & Nút Thêm mới */}
-      <div className="d-flex justify-content-between align-items-center mb-4">
+      <div className="page-heading">
         <div>
-          <h2 className="fw-bold text-dark">📂 Quản Lý Danh Mục Thực Đơn</h2>
-          <p className="text-secondary mb-0">Phân loại các món ăn trong thực đơn của nhà hàng</p>
+          <h1 className="h5 fw-bold text-dark mb-1">Danh mục</h1>
+          <div className="text-muted small">
+            Quản lý phân loại các nhóm món ăn trong nhà hàng
+          </div>
         </div>
-        <Button variant="primary" className="fw-bold" onClick={handleOpenAddModal}>
-          + Thêm Danh Mục
+        <Button
+          variant="dark"
+          size="sm"
+          className="fw-semibold rounded-1 px-3"
+          onClick={handleOpenAddModal}
+        >
+          + Thêm danh mục
         </Button>
       </div>
 
       {/* Thông báo */}
-      {msg && <div className="alert alert-success alert-dismissible fade show py-2 px-3 small" role="alert">{msg}</div>}
-      {error && <div className="alert alert-danger alert-dismissible fade show py-2 px-3 small" role="alert">{error}</div>}
+      {msg && (
+        <div
+          className="alert alert-success alert-dismissible fade show py-2 px-3 small"
+          role="alert"
+        >
+          {msg}
+        </div>
+      )}
+      {error && (
+        <div
+          className="alert alert-danger alert-dismissible fade show py-2 px-3 small"
+          role="alert"
+        >
+          {error}
+        </div>
+      )}
 
       {/* Danh sách danh mục */}
-      <Card className="shadow-sm border-0 rounded-3">
-        <Card.Body className="p-0">
-          {loading ? (
-            <div className="text-center py-5">
-              <Spinner animation="border" variant="primary" />
-              <p className="text-secondary mt-2 mb-0">Đang tải danh sách danh mục...</p>
-            </div>
-          ) : list.length === 0 ? (
-            <div className="text-center py-5 text-secondary">
-              Chưa có danh mục nào. Hãy bấm nút "Thêm Danh Mục" để tạo mới.
-            </div>
-          ) : (
-            <Table hover responsive className="align-middle mb-0">
-              <thead className="table-light">
-                <tr>
-                  <th className="px-4 py-3" style={{ width: "80px" }}>#</th>
-                  <th className="py-3" style={{ width: "250px" }}>Tên Danh Mục</th>
-                  <th className="py-3">Mô Tả</th>
-                  <th className="py-3" style={{ width: "180px" }}>Ngày Tạo</th>
-                  <th className="py-3 text-end px-4" style={{ width: "200px" }}>Thao Tác</th>
+      <div className="border border-light-subtle rounded-1 bg-white mb-4">
+        {loading ? (
+          <div className="text-center py-5">
+            <Spinner animation="border" variant="primary" />
+            <p className="text-secondary mt-2 mb-0">
+              Đang tải danh sách danh mục...
+            </p>
+          </div>
+        ) : list.length === 0 ? (
+          <div className="text-center py-5 text-secondary">
+            Chưa có danh mục nào. Hãy bấm nút "Thêm Danh Mục" để tạo mới.
+          </div>
+        ) : (
+          <Table hover responsive className="align-middle mb-0 table-sm">
+            <thead className="table-light border-bottom">
+              <tr>
+                <th
+                  className="px-3 py-2 text-muted fw-semibold small"
+                  style={{ width: "60px" }}
+                >
+                  #
+                </th>
+                <th
+                  className="py-2 text-muted fw-semibold small"
+                  style={{ width: "220px" }}
+                >
+                  Tên danh mục
+                </th>
+                <th className="py-2 text-muted fw-semibold small">Mô tả</th>
+                <th
+                  className="py-2 text-muted fw-semibold small"
+                  style={{ width: "150px" }}
+                >
+                  Ngày tạo
+                </th>
+                <th
+                  className="py-2 text-muted fw-semibold text-end px-3 small"
+                  style={{ width: "180px" }}
+                >
+                  Thao tác
+                </th>
+              </tr>
+            </thead>
+            <tbody>
+              {list.map((item, idx) => (
+                <tr key={item._id} className="border-bottom last-border-0">
+                  <td className="px-3 py-2 text-secondary small">{idx + 1}</td>
+                  <td className="py-2 fw-semibold text-dark small">
+                    {item.ten}
+                  </td>
+                  <td className="py-2 text-secondary small">
+                    {item.moTa || "-"}
+                  </td>
+                  <td className="py-2 text-secondary small">
+                    {new Date(item.createdAt).toLocaleDateString("vi-VN")}
+                  </td>
+                  <td className="py-2 text-end px-3">
+                    <Button
+                      variant="link"
+                      size="sm"
+                      className="me-2 text-primary p-0 text-decoration-none small fw-semibold"
+                      onClick={() => handleOpenEditModal(item)}
+                    >
+                      Sửa
+                    </Button>
+                    <Button
+                      variant="link"
+                      size="sm"
+                      className="text-danger p-0 text-decoration-none small fw-semibold"
+                      onClick={() => handleDelete(item._id, item.ten)}
+                    >
+                      Xóa
+                    </Button>
+                  </td>
                 </tr>
-              </thead>
-              <tbody>
-                {list.map((item, idx) => (
-                  <tr key={item._id}>
-                    <td className="px-4 py-3 text-secondary">{idx + 1}</td>
-                    <td className="py-3 fw-bold text-dark">{item.ten}</td>
-                    <td className="py-3 text-secondary">{item.moTa || "-"}</td>
-                    <td className="py-3 text-secondary">
-                      {new Date(item.createdAt).toLocaleDateString("vi-VN")}
-                    </td>
-                    <td className="py-3 text-end px-4">
-                      <Button 
-                        variant="outline-warning" 
-                        size="sm"
-                        className="me-2 fw-semibold"
-                        onClick={() => handleOpenEditModal(item)}
-                      >
-                        ✏️ Sửa
-                      </Button>
-                      <Button 
-                        variant="outline-danger" 
-                        size="sm"
-                        className="fw-semibold"
-                        onClick={() => handleDelete(item._id, item.ten)}
-                      >
-                        🗑️ Xóa
-                      </Button>
-                    </td>
-                  </tr>
-                ))}
-              </tbody>
-            </Table>
-          )}
-        </Card.Body>
-      </Card>
+              ))}
+            </tbody>
+          </Table>
+        )}
+      </div>
 
       {/* Modal Thêm / Sửa Danh Mục */}
-      <Modal show={showModal} onHide={() => setShowModal(false)} backdrop="static">
+      <Modal
+        show={showModal}
+        onHide={() => setShowModal(false)}
+        backdrop="static"
+        contentClassName="rounded-1 border-0"
+      >
         <Form onSubmit={handleSaveDanhMuc}>
-          <Modal.Header closeButton>
-            <Modal.Title className="fw-bold text-dark">
-              {isEditMode ? "Cập Nhật Danh Mục" : "Thêm Danh Mục Mới"}
+          <Modal.Header closeButton className="py-2 px-3 border-bottom">
+            <Modal.Title className="fs-6 fw-bold text-dark">
+              {isEditMode ? "Cập nhật danh mục" : "Thêm danh mục mới"}
             </Modal.Title>
           </Modal.Header>
-          <Modal.Body>
+          <Modal.Body className="p-3">
             <Form.Group className="mb-3">
-              <Form.Label className="fw-semibold text-secondary">Tên danh mục</Form.Label>
+              <Form.Label className="fw-semibold text-secondary small">
+                Tên danh mục
+              </Form.Label>
               <Form.Control
                 required
-                placeholder="VD: Khai vị, Món chính, Đồ uống..."
+                className="rounded-1 form-control-sm"
+                placeholder="Khai vị, Món chính, Đồ uống..."
                 value={ten}
                 onChange={(e) => setTen(e.target.value)}
               />
             </Form.Group>
 
-            <Form.Group className="mb-3">
-              <Form.Label className="fw-semibold text-secondary">Mô tả danh mục</Form.Label>
+            <Form.Group className="mb-2">
+              <Form.Label className="fw-semibold text-secondary small">
+                Mô tả danh mục
+              </Form.Label>
               <Form.Control
                 as="textarea"
                 rows={3}
-                placeholder="Mô tả ngắn gọn về danh mục thực đơn này..."
+                className="rounded-1 form-control-sm"
+                placeholder="Mô tả ngắn gọn về nhóm món ăn này..."
                 value={moTa}
                 onChange={(e) => setMoTa(e.target.value)}
               />
             </Form.Group>
           </Modal.Body>
-          <Modal.Footer>
-            <Button variant="secondary" onClick={() => setShowModal(false)}>Hủy</Button>
-            <Button variant="primary" type="submit" className="fw-bold">
-              {isEditMode ? "Lưu thay đổi" : "+ Thêm Danh Mục"}
+          <Modal.Footer className="py-2 px-3 border-top">
+            <Button
+              variant="outline-secondary"
+              size="sm"
+              className="rounded-1 px-3"
+              onClick={() => setShowModal(false)}
+            >
+              Hủy
+            </Button>
+            <Button
+              variant="dark"
+              size="sm"
+              type="submit"
+              className="fw-semibold rounded-1 px-3"
+            >
+              {isEditMode ? "Lưu thay đổi" : "Thêm danh mục"}
             </Button>
           </Modal.Footer>
         </Form>

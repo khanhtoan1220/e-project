@@ -9,7 +9,7 @@ import {
   Row,
   Col,
   InputGroup,
-  Card
+  Card,
 } from "react-bootstrap";
 import apiClient from "../utils/api";
 import URL from "../constants/URL";
@@ -88,11 +88,11 @@ export default function KhoNguyenLieu() {
     e.preventDefault();
     setError("");
     setMsg("");
-    
+
     const data = {
       ten,
       donVi: donViTinh,
-      soLuongTon: Number(soLuongTon)
+      soLuongTon: Number(soLuongTon),
     };
 
     try {
@@ -125,14 +125,16 @@ export default function KhoNguyenLieu() {
     try {
       setError("");
       setMsg("");
-      
+
       // Gọi API Patch /api/quan-tri/nhap-kho của Backend
       await apiClient.patch("/quan-tri/nhap-kho", {
         id: selectedIngredient._id,
-        soLuongThem: Number(soLuongThem)
+        soLuongThem: Number(soLuongThem),
       });
 
-      setMsg(`Đã nhập thêm +${soLuongThem} ${selectedIngredient.donVi} cho nguyên liệu ${selectedIngredient.ten}!`);
+      setMsg(
+        `Đã nhập thêm +${soLuongThem} ${selectedIngredient.donVi} cho nguyên liệu ${selectedIngredient.ten}!`,
+      );
       setShowNhapKhoModal(false);
       setSelectedIngredient(null);
       setSoLuongThem("");
@@ -143,7 +145,9 @@ export default function KhoNguyenLieu() {
   };
 
   const handleDelete = async (id, tenNL) => {
-    if (window.confirm(`Bạn có chắc chắn muốn xóa nguyên liệu "${tenNL}" không?`)) {
+    if (
+      window.confirm(`Bạn có chắc chắn muốn xóa nguyên liệu "${tenNL}" không?`)
+    ) {
       try {
         setError("");
         setMsg("");
@@ -158,168 +162,265 @@ export default function KhoNguyenLieu() {
 
   const renderStatusBadge = (tonKho) => {
     if (tonKho <= 0) {
-      return <Badge bg="danger">🔴 Hết hàng (0)</Badge>;
+      return (
+        <Badge
+          bg="danger-subtle"
+          text="danger"
+          className="border border-danger rounded-1 px-2 py-1"
+        >
+          Hết hàng
+        </Badge>
+      );
     } else if (tonKho < 10) {
-      return <Badge bg="warning" text="dark">🟡 Sắp hết ({tonKho})</Badge>;
+      return (
+        <Badge
+          bg="warning-subtle"
+          text="warning"
+          className="border border-warning rounded-1 px-2 py-1"
+        >
+          Sắp hết
+        </Badge>
+      );
     } else {
-      return <Badge bg="success">🟢 An toàn ({tonKho})</Badge>;
+      return (
+        <Badge
+          bg="success-subtle"
+          text="success"
+          className="border border-success rounded-1 px-2 py-1"
+        >
+          An toàn
+        </Badge>
+      );
     }
   };
 
   return (
-    <div>
+    <div className="admin-page">
       {/* Tiêu đề & Nút Thêm mới */}
-      <div className="d-flex justify-content-between align-items-center mb-4">
+      <div className="page-heading">
         <div>
-          <h2 className="fw-bold text-dark">📦 Quản Lý Kho Nguyên Liệu</h2>
-          <p className="text-secondary mb-0">Theo dõi tồn kho thực tế, nhập kho và kiểm soát nguyên liệu</p>
+          <h1 className="h4 fw-bold text-dark mb-1">Nguyên liệu</h1>
+          <div className="text-muted small">
+            Giám sát số lượng tồn thực tế, nhập thêm nguyên vật liệu
+          </div>
         </div>
-        <Button variant="primary" className="fw-bold" onClick={handleOpenAddModal}>
-          + Thêm Nguyên Liệu
+        <Button
+          variant="dark"
+          size="sm"
+          className="fw-semibold rounded-1 px-3"
+          onClick={handleOpenAddModal}
+        >
+          + Thêm nguyên liệu
         </Button>
       </div>
 
       {/* Thông báo */}
-      {msg && <div className="alert alert-success alert-dismissible fade show py-2 px-3 small" role="alert">{msg}</div>}
-      {error && <div className="alert alert-danger alert-dismissible fade show py-2 px-3 small" role="alert">{error}</div>}
+      {msg && (
+        <div
+          className="alert alert-success alert-dismissible fade show py-2 px-3 small"
+          role="alert"
+        >
+          {msg}
+        </div>
+      )}
+      {error && (
+        <div
+          className="alert alert-danger alert-dismissible fade show py-2 px-3 small"
+          role="alert"
+        >
+          {error}
+        </div>
+      )}
 
       {/* Khung lọc & tìm kiếm */}
-      <Card className="shadow-sm border-0 rounded-3 mb-4">
-        <Card.Body className="p-3">
-          <Form onSubmit={handleSearchSubmit}>
-            <Row className="g-3 align-items-center">
-              <Col md={5}>
-                <InputGroup>
-                  <Form.Control
-                    placeholder="Tìm theo tên nguyên liệu..."
-                    value={search}
-                    onChange={(e) => setSearch(e.target.value)}
-                  />
-                  <Button variant="secondary" type="submit">
-                    Tìm kiếm
-                  </Button>
-                </InputGroup>
-              </Col>
-              
-              <Col md={4}>
-                <Form.Select
-                  value={tinhTrangFilter}
-                  onChange={(e) => setTinhTrangFilter(e.target.value)}
-                >
-                  <option value="">Tất cả trạng thái tồn</option>
-                  <option value="conHang">Còn nhiều (tồn &gt;= 10)</option>
-                  <option value="sapHet">Sắp hết (tồn &lt; 10)</option>
-                  <option value="hetHang">Hết hàng (tồn &lt;= 0)</option>
-                </Form.Select>
-              </Col>
+      <div className="border border-light-subtle rounded-1 bg-white p-3 mb-3">
+        <Form onSubmit={handleSearchSubmit}>
+          <Row className="g-2 align-items-center">
+            <Col md={4}>
+              <Form.Control
+                size="sm"
+                className="rounded-1"
+                placeholder="Tìm theo tên nguyên liệu..."
+                value={search}
+                onChange={(e) => setSearch(e.target.value)}
+              />
+            </Col>
 
-              <Col md={3} className="text-md-end">
-                <Button 
-                  variant="outline-secondary"
-                  className="w-100"
-                  onClick={() => {
-                    setSearch("");
-                    setTinhTrangFilter("");
-                    setTimeout(() => loadData(), 50);
-                  }}
-                >
-                  Đặt lại lọc
-                </Button>
-              </Col>
-            </Row>
-          </Form>
-        </Card.Body>
-      </Card>
+            <Col md={3}>
+              <Form.Select
+                size="sm"
+                className="rounded-1"
+                value={tinhTrangFilter}
+                onChange={(e) => setTinhTrangFilter(e.target.value)}
+              >
+                <option value="">Tất cả trạng thái tồn</option>
+                <option value="conHang">Còn nhiều (tồn &gt;= 10)</option>
+                <option value="sapHet">Sắp hết (tồn &lt; 10)</option>
+                <option value="hetHang">Hết hàng (tồn &lt;= 0)</option>
+              </Form.Select>
+            </Col>
+
+            <Col md={5} className="d-flex gap-2 justify-content-md-end">
+              <Button
+                variant="dark"
+                size="sm"
+                className="fw-semibold rounded-1 px-3"
+                type="submit"
+              >
+                Tìm kiếm
+              </Button>
+              <Button
+                variant="outline-secondary"
+                size="sm"
+                className="rounded-1"
+                onClick={() => {
+                  setSearch("");
+                  setTinhTrangFilter("");
+                  setTimeout(() => loadData(), 50);
+                }}
+              >
+                Xóa bộ lọc
+              </Button>
+            </Col>
+          </Row>
+        </Form>
+      </div>
 
       {/* Danh sách nguyên liệu */}
-      <Card className="shadow-sm border-0 rounded-3">
-        <Card.Body className="p-0">
-          {loading ? (
-            <div className="text-center py-5">
-              <Spinner animation="border" variant="primary" />
-              <p className="text-secondary mt-2 mb-0">Đang tải danh sách kho...</p>
-            </div>
-          ) : list.length === 0 ? (
-            <div className="text-center py-5 text-secondary">
-              Không tìm thấy nguyên liệu nào trong kho.
-            </div>
-          ) : (
-            <Table hover responsive className="align-middle mb-0">
-              <thead className="table-light">
-                <tr>
-                  <th className="px-4 py-3" style={{ width: "80px" }}>#</th>
-                  <th className="py-3">Tên Nguyên Liệu</th>
-                  <th className="py-3">Đơn Vị Tính</th>
-                  <th className="py-3">Số Lượng Tồn</th>
-                  <th className="py-3">Trạng Thái</th>
-                  <th className="py-3 text-end px-4" style={{ width: "280px" }}>Thao Tác</th>
+      <div className="border border-light-subtle rounded-1 bg-white mb-4">
+        {loading ? (
+          <div className="text-center py-5">
+            <Spinner animation="border" variant="primary" />
+            <p className="text-secondary mt-2 mb-0">
+              Đang tải danh sách kho...
+            </p>
+          </div>
+        ) : list.length === 0 ? (
+          <div className="text-center py-5 text-secondary">
+            Không tìm thấy nguyên liệu nào trong kho.
+          </div>
+        ) : (
+          <Table hover responsive className="align-middle mb-0 table-sm">
+            <thead className="table-light border-bottom">
+              <tr>
+                <th
+                  className="px-3 py-2 text-muted fw-semibold small"
+                  style={{ width: "60px" }}
+                >
+                  #
+                </th>
+                <th className="py-2 text-muted fw-semibold small">
+                  Tên nguyên liệu
+                </th>
+                <th
+                  className="py-2 text-muted fw-semibold small"
+                  style={{ width: "150px" }}
+                >
+                  Đơn vị
+                </th>
+                <th
+                  className="py-2 text-muted fw-semibold small"
+                  style={{ width: "150px" }}
+                >
+                  Tồn thực tế
+                </th>
+                <th
+                  className="py-2 text-muted fw-semibold small"
+                  style={{ width: "180px" }}
+                >
+                  Tình trạng
+                </th>
+                <th
+                  className="py-2 text-muted fw-semibold text-end px-3 small"
+                  style={{ width: "220px" }}
+                >
+                  Thao tác
+                </th>
+              </tr>
+            </thead>
+            <tbody>
+              {list.map((item, idx) => (
+                <tr key={item._id} className="border-bottom last-border-0">
+                  <td className="px-3 py-2 text-secondary small">{idx + 1}</td>
+                  <td className="py-2 fw-semibold text-dark small">
+                    {item.ten}
+                  </td>
+                  <td className="py-2 text-secondary small">{item.donVi}</td>
+                  <td className="py-2 fw-bold text-dark small">
+                    {item.soLuongTon}
+                  </td>
+                  <td className="py-2 small">
+                    {renderStatusBadge(item.soLuongTon)}
+                  </td>
+                  <td className="py-2 text-end px-3">
+                    <Button
+                      variant="link"
+                      size="sm"
+                      className="me-3 text-success p-0 text-decoration-none small fw-semibold"
+                      onClick={() => handleOpenNhapKhoModal(item)}
+                    >
+                      Nhập kho
+                    </Button>
+                    <Button
+                      variant="link"
+                      size="sm"
+                      className="me-3 text-primary p-0 text-decoration-none small fw-semibold"
+                      onClick={() => handleOpenEditModal(item)}
+                    >
+                      Sửa
+                    </Button>
+                    <Button
+                      variant="link"
+                      size="sm"
+                      className="text-danger p-0 text-decoration-none small fw-semibold"
+                      onClick={() => handleDelete(item._id, item.ten)}
+                    >
+                      Xóa
+                    </Button>
+                  </td>
                 </tr>
-              </thead>
-              <tbody>
-                {list.map((item, idx) => (
-                  <tr key={item._id}>
-                    <td className="px-4 py-3 text-secondary">{idx + 1}</td>
-                    <td className="py-3 fw-bold text-dark">{item.ten}</td>
-                    <td className="py-3">{item.donVi}</td>
-                    <td className="py-3 fw-bold text-primary">{item.soLuongTon}</td>
-                    <td className="py-3">{renderStatusBadge(item.soLuongTon)}</td>
-                    <td className="py-3 text-end px-4">
-                      <Button 
-                        variant="success" 
-                        size="sm"
-                        className="me-2 fw-semibold"
-                        onClick={() => handleOpenNhapKhoModal(item)}
-                      >
-                        ➕ Nhập kho
-                      </Button>
-                      <Button 
-                        variant="outline-warning" 
-                        size="sm"
-                        className="me-2 fw-semibold"
-                        onClick={() => handleOpenEditModal(item)}
-                      >
-                        ✏️ Sửa
-                      </Button>
-                      <Button 
-                        variant="outline-danger" 
-                        size="sm"
-                        className="fw-semibold"
-                        onClick={() => handleDelete(item._id, item.ten)}
-                      >
-                        🗑️ Xóa
-                      </Button>
-                    </td>
-                  </tr>
-                ))}
-              </tbody>
-            </Table>
-          )}
-        </Card.Body>
-      </Card>
+              ))}
+            </tbody>
+          </Table>
+        )}
+      </div>
 
       {/* Modal Thêm / Sửa Nguyên Liệu */}
-      <Modal show={showModal} onHide={() => setShowModal(false)} backdrop="static">
+      <Modal
+        show={showModal}
+        onHide={() => setShowModal(false)}
+        backdrop="static"
+        contentClassName="rounded-1 border-0"
+      >
         <Form onSubmit={handleSaveIngredient}>
-          <Modal.Header closeButton>
-            <Modal.Title className="fw-bold text-dark">
-              {isEditMode ? "Sửa Thông Tin Nguyên Liệu" : "Thêm Nguyên Liệu Mới"}
+          <Modal.Header closeButton className="py-2 px-3 border-bottom">
+            <Modal.Title className="fs-6 fw-bold text-dark">
+              {isEditMode
+                ? "Sửa thông tin nguyên liệu"
+                : "Thêm nguyên liệu mới"}
             </Modal.Title>
           </Modal.Header>
-          <Modal.Body>
+          <Modal.Body className="p-3">
             <Form.Group className="mb-3">
-              <Form.Label className="fw-semibold text-secondary">Tên nguyên liệu</Form.Label>
+              <Form.Label className="fw-semibold text-secondary small">
+                Tên nguyên liệu
+              </Form.Label>
               <Form.Control
                 required
-                placeholder="VD: Thịt bò, Nấm kim châm, Hành lá..."
+                className="rounded-1 form-control-sm"
+                placeholder="Thịt bò, Nấm kim châm, Hành lá..."
                 value={ten}
                 onChange={(e) => setTen(e.target.value)}
               />
             </Form.Group>
 
             <Form.Group className="mb-3">
-              <Form.Label className="fw-semibold text-secondary">Đơn vị tính</Form.Label>
+              <Form.Label className="fw-semibold text-secondary small">
+                Đơn vị tính
+              </Form.Label>
               <Form.Control
                 required
+                className="rounded-1 form-control-sm"
                 placeholder="VD: kg, gam, quả, lon, chai..."
                 value={donViTinh}
                 onChange={(e) => setDonViTinh(e.target.value)}
@@ -327,47 +428,78 @@ export default function KhoNguyenLieu() {
             </Form.Group>
 
             {!isEditMode && (
-              <Form.Group className="mb-3">
-                <Form.Label className="fw-semibold text-secondary">Số lượng tồn ban đầu</Form.Label>
+              <Form.Group className="mb-2">
+                <Form.Label className="fw-semibold text-secondary small">
+                  Số lượng tồn ban đầu
+                </Form.Label>
                 <Form.Control
                   type="number"
                   min={0}
+                  className="rounded-1 form-control-sm"
                   value={soLuongTon}
                   onChange={(e) => setSoLuongTon(e.target.value)}
                 />
               </Form.Group>
             )}
           </Modal.Body>
-          <Modal.Footer>
-            <Button variant="secondary" onClick={() => setShowModal(false)}>Hủy</Button>
-            <Button variant="primary" type="submit" className="fw-bold">
-              {isEditMode ? "Cập nhật" : "+ Tạo nguyên liệu"}
+          <Modal.Footer className="py-2 px-3 border-top">
+            <Button
+              variant="outline-secondary"
+              size="sm"
+              className="rounded-1 px-3"
+              onClick={() => setShowModal(false)}
+            >
+              Hủy
+            </Button>
+            <Button
+              variant="dark"
+              size="sm"
+              type="submit"
+              className="fw-semibold rounded-1 px-3"
+            >
+              {isEditMode ? "Cập nhật" : "Tạo nguyên liệu"}
             </Button>
           </Modal.Footer>
         </Form>
       </Modal>
 
       {/* Modal Nhập Kho Nhanh */}
-      <Modal show={showNhapKhoModal} onHide={() => { setShowNhapKhoModal(false); setSelectedIngredient(null); }} backdrop="static">
+      <Modal
+        show={showNhapKhoModal}
+        onHide={() => {
+          setShowNhapKhoModal(false);
+          setSelectedIngredient(null);
+        }}
+        backdrop="static"
+        contentClassName="rounded-1 border-0"
+      >
         {selectedIngredient && (
           <Form onSubmit={handleSaveNhapKho}>
-            <Modal.Header closeButton>
-              <Modal.Title className="fw-bold text-dark">➕ Nhập Kho Nguyên Liệu</Modal.Title>
+            <Modal.Header closeButton className="py-2 px-3 border-bottom">
+              <Modal.Title className="fs-6 fw-bold text-dark">
+                Nhập thêm nguyên liệu
+              </Modal.Title>
             </Modal.Header>
-            <Modal.Body>
-              <p className="mb-3">
-                Nguyên liệu: <strong className="text-primary">{selectedIngredient.ten}</strong>
+            <Modal.Body className="p-3">
+              <p className="small mb-3">
+                Nguyên liệu:{" "}
+                <strong className="text-dark">{selectedIngredient.ten}</strong>
+                <br />
+                Tồn kho hiện tại:{" "}
+                <strong className="text-dark">
+                  {selectedIngredient.soLuongTon} {selectedIngredient.donVi}
+                </strong>
               </p>
-              <p className="mb-3 text-secondary">
-                Tồn kho hiện tại: <strong>{selectedIngredient.soLuongTon} {selectedIngredient.donVi}</strong>
-              </p>
-              
-              <Form.Group className="mb-3">
-                <Form.Label className="fw-semibold text-dark">Số lượng cần nhập thêm ({selectedIngredient.donVi})</Form.Label>
+
+              <Form.Group className="mb-2">
+                <Form.Label className="fw-semibold text-secondary small">
+                  Số lượng cần nhập thêm ({selectedIngredient.donVi})
+                </Form.Label>
                 <Form.Control
                   type="number"
                   step="any"
                   required
+                  className="rounded-1 form-control-sm"
                   min="0.01"
                   placeholder="Nhập số lượng bổ sung..."
                   value={soLuongThem}
@@ -376,9 +508,26 @@ export default function KhoNguyenLieu() {
                 />
               </Form.Group>
             </Modal.Body>
-            <Modal.Footer>
-              <Button variant="secondary" onClick={() => { setShowNhapKhoModal(false); setSelectedIngredient(null); }}>Hủy</Button>
-              <Button variant="success" type="submit" className="fw-bold">Xác Nhận Nhập</Button>
+            <Modal.Footer className="py-2 px-3 border-top">
+              <Button
+                variant="outline-secondary"
+                size="sm"
+                className="rounded-1 px-3"
+                onClick={() => {
+                  setShowNhapKhoModal(false);
+                  setSelectedIngredient(null);
+                }}
+              >
+                Hủy
+              </Button>
+              <Button
+                variant="dark"
+                size="sm"
+                type="submit"
+                className="fw-semibold rounded-1 px-3"
+              >
+                Xác nhận nhập
+              </Button>
             </Modal.Footer>
           </Form>
         )}

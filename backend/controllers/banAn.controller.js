@@ -32,3 +32,16 @@ exports.delete = async (req, res) => {
     res.status(400).json({ message: error.message });
   }
 };
+
+exports.getThongTinBanChoKhach = async (req, res) => {
+  const hoaDon = req.hoaDonKhach;
+  const ban = hoaDon.banId;
+  if (String(ban._id) !== req.params.id) {
+    return res.status(403).json({ message: "QR không thuộc bàn này." });
+  }
+  res.json({
+    banId: ban._id, tenBan: ban.ten, khuVuc: ban.khuVuc,
+    trangThai: ban.trangThai, hoaDonId: hoaDon._id,
+    tongTienTamTinh: hoaDon.tongTien, danhSachMonDaGoi: hoaDon.danhSachMon,
+  });
+};
