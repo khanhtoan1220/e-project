@@ -8,11 +8,11 @@ const loaiYeuCau = [
   { ma: "goiNhanVien", ten: "Gọi nhân viên" },
   { ma: "themDungCu", ten: "Thêm chén đũa / khăn lạnh" },
   { ma: "themNuoc", ten: "Châm nước lẩu / thêm đá" },
-  { ma: "thanhToan", ten: "Yêu cầu thanh toán" },
   { ma: "khac", ten: "Khác" },
 ];
 
 function TableMenu({ banId }) {
+  const [searchFocused, setSearchFocused] = useState(false);
   const [selectedCategoryId, setSelectedCategoryId] = useState(null);
   const [searchKeyword, setSearchKeyword] = useState("");
   const [cart, setCart] = useState([]);
@@ -39,8 +39,11 @@ function TableMenu({ banId }) {
         : null;
     setBan(banHienTai);
     setHoaDon({
+      _id: data?._id || data?.hoaDonId,
       danhSachMon: data?.danhSachMonDaGoi || data?.danhSachMon || [],
       tongTien: data?.tongTienTamTinh ?? data?.tongTien ?? 0,
+      danhSachYeuCauTraMon: data?.danhSachYeuCauTraMon || [],
+      danhSachYeuCauThanhToan: data?.danhSachYeuCauThanhToan || [],
     });
   }, []);
 
@@ -135,7 +138,7 @@ function TableMenu({ banId }) {
       });
       setCart([]);
       setShowCart(false);
-      setMessage("Đã gửi món xuống bếp. Bạn có thể theo dõi trạng thái tại mục Món đã gọi.");
+      setMessage("Đã gửi yêu cầu gọi món. Nhân viên sẽ xác nhận trước khi món cần chế biến được chuyển đến bếp.");
       setTab("tracking");
       await taiHoaDon().catch(() => {});
     } catch (loi) {
@@ -164,15 +167,52 @@ function TableMenu({ banId }) {
     }
   };
 
+  const guiYeuCauTraMon = async (monHoaDonId, soLuongTra, lyDo) => {
+    setError("");
+    setMessage("");
+    try {
+      const response = await api.post(`/khach-hang/ban/${banId}/tra-mon`, {
+        monHoaDonId,
+        soLuongTra: Number(soLuongTra),
+        lyDo,
+      });
+      setMessage(response.data?.message || "Đã gửi yêu cầu trả món.");
+      await taiHoaDon();
+      return true;
+    } catch (loi) {
+      setError(loi.response?.data?.message || "Không thể gửi yêu cầu trả món.");
+      return false;
+    }
+  };
+
+  const guiYeuCauThanhToan = async () => {
+    setError("");
+    setMessage("");
+    try {
+      const response = await api.post(`/khach-hang/ban/${banId}/yeu-cau-thanh-toan`);
+      setMessage(response.data?.message || "Đã gửi yêu cầu thanh toán.");
+      await taiHoaDon();
+    } catch (loi) {
+      setError(loi.response?.data?.message || "Không thể gửi yêu cầu thanh toán.");
+    }
+  };
+
   return (
     <main className="table-order-page">
-      <section className="table-header">
-        <div>
-          <span className="page-label">GỌI MÓN TẠI BÀN</span>
-          <h1>{ban?.ten || (loadingBan ? "Đang kết nối bàn..." : "Gọi món tại bàn")}</h1>
-          <p>{ban ? `${ban.khuVuc?.replace("tang", "Tầng ")} · Hóa đơn tạm tính cập nhật tự động` : "Quét mã QR đặt tại bàn để bắt đầu gọi món."}</p>
+      <section className="table-welcome">
+        <div className="table-welcome-copy">
+          <span className="page-label">NGONNHÀ · GỌI MÓN TẠI BÀN</span>
+          <h1>Bữa ngon của bạn<br /><em>bắt đầu từ đây.</em></h1>
+          <p>Chọn món vừa miệng, ghi chú theo sở thích. Bếp sẽ nhận món sau khi nhân viên xác nhận.</p>
+          <div className="table-welcome-meta">
+            <strong>{ban?.ten || (loadingBan ? "Đang kết nối bàn…" : "Bàn ăn")}</strong>
+            <span>{ban ? ban.khuVuc?.replace("tang", "Tầng ") : "Đang nhận diện bàn"}</span>
+            <span className="table-status">{loadingBan ? "Đang kết nối" : ban?.trangThai === "trong" ? "Đã thanh toán" : ban ? "Đang phục vụ" : "Chưa mở bàn"}</span>
+          </div>
         </div>
-        <div className="table-status">{loadingBan ? "Đang kết nối" : ban ? "Đang phục vụ" : "Chưa mở bàn"}</div>
+        <div className="table-welcome-image" role="img" aria-label="Mâm cơm Việt nóng hổi">
+          <span>GỌI MÓN THEO CÁCH BẠN THÍCH</span>
+        </div>
       </section>
 
       {error && <p className="error-text" role="alert">{error}</p>}
@@ -181,20 +221,26 @@ function TableMenu({ banId }) {
       <div className="order-tabs" role="tablist" aria-label="Nội dung bàn">
         <button type="button" className={tab === "menu" ? "active" : ""} onClick={() => setTab("menu")}>Thực đơn</button>
         <button type="button" className={tab === "tracking" ? "active" : ""} onClick={() => setTab("tracking")}>
-          Món đã gọi {hoaDon?.danhSachMon?.length ? `(${hoaDon.danhSachMon.length})` : ""}
+          Hóa đơn hiện tại {hoaDon?.danhSachMon?.length ? `(${hoaDon.danhSachMon.length})` : ""}
         </button>
       </div>
 
       {tab === "menu" ? (
         <>
-          <section className="menu-toolbar">
-            <input
-              type="search"
-              className="menu-search"
-              placeholder="Tìm món ăn..."
-              value={searchKeyword}
-              onChange={(event) => setSearchKeyword(event.target.value)}
-            />
+          <section className="menu-toolbar menu-toolbar-warm">
+            <div><span className="page-label">THỰC ĐƠN NHÀ MÌNH</span><h2>Hôm nay mình ăn gì?</h2></div>
+            <label className={`menu-search-wrap ${searchFocused ? "focused" : ""}`}>
+              <span aria-hidden="true">⌕</span>
+              <input
+                type="search"
+                className="menu-search"
+                placeholder="Tìm món bạn đang thèm..."
+                value={searchKeyword}
+                onFocus={() => setSearchFocused(true)}
+                onBlur={() => setSearchFocused(false)}
+                onChange={(event) => setSearchKeyword(event.target.value)}
+              />
+            </label>
           </section>
           <section className="category-section">
             <Category selectedCategoryId={selectedCategoryId} onSelectCategory={setSelectedCategoryId} />
@@ -207,6 +253,10 @@ function TableMenu({ banId }) {
         <OrderTracking
           ban={ban}
           hoaDon={hoaDon}
+          danhSachYeuCauTraMon={hoaDon?.danhSachYeuCauTraMon || []}
+          danhSachYeuCauThanhToan={hoaDon?.danhSachYeuCauThanhToan || []}
+          onRequestReturn={guiYeuCauTraMon}
+          onRequestPayment={guiYeuCauThanhToan}
           loading={loadingBan}
           onRefresh={() => taiHoaDon().catch(() => {})}
           onOrderMore={() => setTab("menu")}

@@ -46,7 +46,6 @@ function Support({ banId }) {
           <option value="goiNhanVien">Gọi nhân viên</option>
           <option value="themDungCu">Thêm dụng cụ</option>
           <option value="themNuoc">Thêm nước</option>
-          <option value="thanhToan">Yêu cầu thanh toán</option>
           <option value="khac">Khác</option>
         </select>
 

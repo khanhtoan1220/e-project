@@ -7,11 +7,10 @@ const URL = {
 
   // Phục vụ
   PHUC_VU_SO_DO: "/phuc-vu/so-do-ban",
+  CAU_HINH_THANH_TOAN: "/khach-hang/cau-hinh-thanh-toan",
   PHUC_VU_GOI_MON: "/phuc-vu/goi-mon",
   PHUC_VU_THANH_TOAN: "/phuc-vu/thanh-toan",
-  PHUC_VU_DON_BAN: (id) => `/phuc-vu/don-ban/${id}`,
   PHUC_VU_CHUYEN_BAN: "/phuc-vu/chuyen-ban",
-  PHUC_VU_BUNG_MON: "/phuc-vu/cap-nhat-bung-mon",
   PHUC_VU_DUYET_MON: "/phuc-vu/duyet-mon",
   HOA_DON_BAN: (id) => `/phuc-vu/hoa-don-ban/${id}`,
   DANH_SACH_HO_TRO: "/phuc-vu/danh-sach-ho-tro",

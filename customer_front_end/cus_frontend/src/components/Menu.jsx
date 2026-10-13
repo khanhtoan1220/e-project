@@ -112,23 +112,19 @@ function Menu({
           className="menu-card"
           key={item._id}
         >
-          {item.hinhAnh ? (
-            <img
-              src={layUrlAnh(item.hinhAnh)}
-              alt={item.ten}
-            />
-          ) : (
-            <div className="menu-placeholder">
-              🍽️
-            </div>
-          )}
+          <div className="menu-card-image">
+            {item.hinhAnh ? (
+              <img src={layUrlAnh(item.hinhAnh)} alt={item.ten} loading="lazy" />
+            ) : (
+              <div className="menu-placeholder">Món ngon<br />đang chờ</div>
+            )}
+            <span className={`menu-photo-status ${item.conBan ? "available" : "unavailable"}`}>
+              {item.conBan ? "Bếp đang phục vụ" : "Tạm hết món"}
+            </span>
+          </div>
 
           <div className="menu-card-body">
-            <h3>{item.ten}</h3>
-
-            <span className={`availability-label ${item.conBan ? "available" : "unavailable"}`}>
-              {item.conBan ? "Đang phục vụ" : "Hết món"}
-            </span>
+            <div className="menu-card-title-row"><h3>{item.ten}</h3><span className="menu-card-spark">✦</span></div>
 
             {item.moTa && (
               <p className="menu-description">
@@ -150,7 +146,7 @@ function Menu({
                   disabled={!item.conBan}
                   onClick={() => onAddToCart({ ...item, name: item.ten, price: item.gia })}
                 >
-                  {item.conBan ? "+ Thêm" : "Hết món"}
+                {item.conBan ? (onAddToCart ? "Thêm món +" : "Xem món") : "Tạm hết"}
                 </button>
               )}
             </div>

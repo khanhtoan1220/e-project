@@ -10,8 +10,6 @@ router.get("/hoa-don-ban/:id", checkAuth, checkRole(["admin", "phucVu"]), phucVu
 router.post("/thanh-toan", checkAuth, checkRole(["admin", "phucVu"]), phucVuController.thanhToan);
 router.get("/danh-sach-ho-tro", checkAuth, checkRole(["admin", "phucVu"]), hoTroController.getDanhSachCho);
 router.patch("/xac-nhan-ho-tro/:id", checkAuth, checkRole(["admin", "phucVu"]), hoTroController.hoanTatYeuCau);
-router.patch("/don-ban/:id", checkAuth, checkRole(["admin", "phucVu"]), phucVuController.hoanTatDonBan);
 router.post("/chuyen-ban", checkAuth, checkRole(["admin", "phucVu"]), phucVuController.chuyenBan);
 router.post("/duyet-mon", checkAuth, checkRole(["admin", "phucVu"]), phucVuController.duyetMonAnKhachGoi);
-router.patch("/cap-nhat-bung-mon", checkAuth, checkRole(["admin", "phucVu"]), phucVuController.xacNhanPhucVuMon);
 module.exports = router;

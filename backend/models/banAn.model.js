@@ -13,7 +13,7 @@ const banAnSchema = new mongoose.Schema(
     },
     trangThai: {
       type: String,
-      enum: ["trong", "dangSuDung", "datTruoc", "choDonDep"],
+      enum: ["trong", "dangSuDung", "datTruoc"],
       default: "trong",
     },
     hoaDon: {

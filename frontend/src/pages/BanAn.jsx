@@ -11,7 +11,6 @@ import {
   Table,
 } from "react-bootstrap";
 import apiClient from "../utils/api";
-import URL from "../constants/URL";
 
 export default function BanAn() {
   const [list, setList] = useState([]);
@@ -76,7 +75,7 @@ export default function BanAn() {
   // Xóa bàn ăn (Quyền Admin)
   const handleDeleteBan = async (id, tenBan, trangThai) => {
     if (trangThai !== "trong") {
-      alert(`Bàn "${tenBan}" đang có khách hoặc chờ dọn dẹp, không được xóa!`);
+      alert(`Bàn "${tenBan}" đang có khách hoặc được đặt trước, không được xóa!`);
       return;
     }
     if (window.confirm(`Bạn có chắc chắn muốn xóa bàn "${tenBan}"?`)) {
@@ -89,34 +88,6 @@ export default function BanAn() {
       } catch (err) {
         setError(err.toString());
       }
-    }
-  };
-
-  // Mở bàn ăn trống (Tạo hóa đơn chưa thanh toán mới)
-  const handleMoBan = async (banId, tenBan) => {
-    if (window.confirm(`Xác nhận MỞ BÀN cho khách ngồi tại bàn "${tenBan}"?`)) {
-      try {
-        setError("");
-        setMsg("");
-        await apiClient.post("/phuc-vu/mo-ban", { banId });
-        setMsg(`Mở bàn "${tenBan}" thành công!`);
-        loadData();
-      } catch (err) {
-        setError(err.toString());
-      }
-    }
-  };
-
-  // Dọn bàn ăn xong (Đưa bàn chờ dọn về trạng thái trống)
-  const handleDonBan = async (banId, tenBan) => {
-    try {
-      setError("");
-      setMsg("");
-      await apiClient.patch(`/phuc-vu/don-ban/${banId}`);
-      setMsg(`Đã dọn dẹp sạch sẽ "${tenBan}". Sẵn sàng phục vụ khách mới!`);
-      loadData();
-    } catch (err) {
-      setError(err.toString());
     }
   };
 
@@ -144,7 +115,7 @@ export default function BanAn() {
       try {
         setBillLoading(true);
         await apiClient.post("/phuc-vu/thanh-toan", { hoaDonId });
-        alert("Thanh toán thành công! Đang dọn dẹp bàn.");
+        alert("Thanh toán thành công! Bàn đã chuyển về trạng thái trống.");
         setShowBillModal(false);
         loadData();
       } catch (err) {
@@ -161,19 +132,13 @@ export default function BanAn() {
         return {
           bg: "bg-success bg-opacity-10 border-success text-success",
           badgeBg: "success",
-          label: "Bàn Trống",
+          label: "Sẵn sàng",
         };
       case "dangSuDung":
         return {
           bg: "bg-danger bg-opacity-10 border-danger text-danger cursor-pointer",
           badgeBg: "danger",
-          label: "Đang Sử Dụng",
-        };
-      case "choDonDep":
-        return {
-          bg: "bg-warning bg-opacity-10 border-warning text-warning-emphasis",
-          badgeBg: "warning",
-          label: "Chờ Dọn Dẹp",
+          label: "Đang phục vụ",
         };
       case "datTruoc":
       case "daDatTruoc":
@@ -198,7 +163,7 @@ export default function BanAn() {
         <div>
           <h1 className="h4 fw-bold text-dark mb-1">Bàn ăn</h1>
           <div className="text-muted small">
-            Quản lý sơ đồ bàn, tình trạng bàn ăn và dọn dẹp bàn
+            Quản lý sơ đồ bàn và tình trạng phục vụ
           </div>
         </div>
         <Button
@@ -288,9 +253,7 @@ export default function BanAn() {
                     borderLeft:
                       ban.trangThai === "dangSuDung"
                         ? "4px solid #fca5a5"
-                        : ban.trangThai === "choDonDep"
-                          ? "4px solid #fde047"
-                          : "1px solid #cbd5e1",
+                        : "1px solid #cbd5e1",
                   }}
                   onClick={() =>
                     ban.trangThai === "dangSuDung" && handleOpenBillDetails(ban)
@@ -328,39 +291,13 @@ export default function BanAn() {
                   </div>
 
                   {/* Nút hành động dẹt phẳng */}
-                  <div className="mt-2 pt-2 border-top border-light-subtle d-flex flex-column gap-1">
-                    {ban.trangThai === "trong" && (
-                      <Button
-                        variant="dark"
-                        size="sm"
-                        className="w-100 fw-semibold py-1 rounded-1"
-                        onClick={(e) => {
-                          e.stopPropagation();
-                          handleMoBan(ban._id, ban.ten);
-                        }}
-                      >
-                        Mở bàn
-                      </Button>
-                    )}
-                    {ban.trangThai === "choDonDep" && (
-                      <Button
-                        variant="outline-dark"
-                        size="sm"
-                        className="w-100 fw-semibold py-1 rounded-1"
-                        onClick={(e) => {
-                          e.stopPropagation();
-                          handleDonBan(ban._id, ban.ten);
-                        }}
-                      >
-                        Xác nhận dọn dẹp
-                      </Button>
-                    )}
-                    {ban.trangThai === "dangSuDung" && (
+                  {ban.trangThai === "dangSuDung" && (
+                    <div className="mt-2 pt-2 border-top border-light-subtle d-flex flex-column gap-1">
                       <div className="text-center text-secondary small fw-semibold py-1">
                         Bấm xem hóa đơn
                       </div>
-                    )}
-                  </div>
+                    </div>
+                  )}
                 </div>
               </Col>
             );
@@ -540,6 +477,9 @@ export default function BanAn() {
                           >
                             Đã hủy
                           </Badge>
+                        )}
+                        {item.trangThaiMon === "daTra" && (
+                          <Badge bg="secondary">Đã trả</Badge>
                         )}
                       </td>
                     </tr>

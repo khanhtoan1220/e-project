@@ -101,11 +101,11 @@ exports.huyHoaDon = async (req, res) => {
     if (!daHuy) return res.status(409).json({ message: "Hóa đơn đã kết thúc." });
     await BanAn.findOneAndUpdate(
       { _id: daHuy.banId, hoaDon: daHuy._id },
-      { trangThai: "choDonDep", hoaDon: null },
+      { trangThai: "trong", hoaDon: null },
     );
 
     res.json({
-      message: "Đã hủy hóa đơn, bàn chuyển sang chờ dọn",
+      message: "Đã hủy hóa đơn, bàn đã chuyển về trạng thái trống",
       data: daHuy,
     });
   } catch (error) {

@@ -1,7 +1,8 @@
 import { useCallback, useEffect, useState } from "react";
-import { Alert, Badge, Button, Card, Spinner } from "react-bootstrap";
+import { Alert, Badge, Button, Card, Modal, Spinner } from "react-bootstrap";
 import {
   get_danhsach_hotro_service,
+  get_cau_hinh_thanh_toan_service,
   xac_nhan_hotro_service,
 } from "../services/staff_service";
 
@@ -10,7 +11,19 @@ const tenLoaiYeuCau = {
   themDungCu: "Thêm dụng cụ",
   themNuoc: "Thêm nước",
   thanhToan: "Yêu cầu thanh toán",
+  traMon: "Yêu cầu trả món",
   khac: "Yêu cầu khác",
+};
+
+const layUrlQrThanhToan = (hoaDon, cauHinh) => {
+  const maNganHang = cauHinh?.maNganHang;
+  const soTaiKhoan = cauHinh?.soTaiKhoan;
+  const tenChuTaiKhoan = cauHinh?.tenChuTaiKhoan;
+  const tongTien = Number(hoaDon?.tongTien || 0);
+  if (!maNganHang || !soTaiKhoan || !tenChuTaiKhoan || tongTien <= 0 || !hoaDon?._id) return "";
+
+  const noiDung = `HD${String(hoaDon._id).slice(-8).toUpperCase()}`;
+  return `https://img.vietqr.io/image/${encodeURIComponent(maNganHang)}-${encodeURIComponent(soTaiKhoan)}-compact2.png?amount=${encodeURIComponent(tongTien)}&addInfo=${encodeURIComponent(noiDung)}&accountName=${encodeURIComponent(tenChuTaiKhoan)}`;
 };
 
 export default function YeuCauHoTro() {
@@ -19,6 +32,8 @@ export default function YeuCauHoTro() {
   const [dangXuLyId, setDangXuLyId] = useState("");
   const [loi, setLoi] = useState("");
   const [thongBao, setThongBao] = useState("");
+  const [yeuCauQr, setYeuCauQr] = useState(null);
+  const [cauHinhThanhToan, setCauHinhThanhToan] = useState(null);
 
   const taiDanhSach = useCallback(async (hienThiLoading = false) => {
     try {
@@ -34,23 +49,39 @@ export default function YeuCauHoTro() {
 
   useEffect(() => {
     taiDanhSach(true);
+    get_cau_hinh_thanh_toan_service().then(setCauHinhThanhToan).catch(() => setCauHinhThanhToan(null));
     const intervalId = window.setInterval(() => taiDanhSach(), 5000);
     return () => window.clearInterval(intervalId);
   }, [taiDanhSach]);
 
-  const hoanTatYeuCau = async (id) => {
+  const hoanTatYeuCau = async (id, ketQua) => {
     try {
+      const yeuCau = danhSach.find((item) => item._id === id);
       setDangXuLyId(id);
       setLoi("");
-      await xac_nhan_hotro_service(id);
+      await xac_nhan_hotro_service(id, ketQua);
       setDanhSach((hienTai) => hienTai.filter((item) => item._id !== id));
-      setThongBao("Đã đánh dấu yêu cầu là xử lý xong.");
+      setThongBao(yeuCau?.loaiYeuCau === "thanhToan" && ketQua === "chapNhan"
+        ? "Đã xác nhận thanh toán; bàn đã chuyển về trạng thái trống."
+        : yeuCau?.loaiYeuCau === "thanhToan"
+          ? "Đã đóng yêu cầu; hóa đơn vẫn chưa thanh toán."
+          : yeuCau?.loaiYeuCau === "traMon" && ketQua === "chapNhan"
+            ? "Đã chấp nhận trả món và cập nhật hóa đơn."
+            : yeuCau?.loaiYeuCau === "traMon" && ketQua === "tuChoi"
+              ? "Đã từ chối yêu cầu trả món."
+              : "Đã đánh dấu yêu cầu là xử lý xong.");
     } catch (error) {
       setLoi(String(error));
     } finally {
       setDangXuLyId("");
     }
   };
+
+  const qrDangMo = layUrlQrThanhToan(yeuCauQr?.hoaDonId, cauHinhThanhToan);
+  const tongTienQr = Number(yeuCauQr?.hoaDonId?.tongTien || 0);
+  const maHoaDonQr = yeuCauQr?.hoaDonId?._id
+    ? `HD${String(yeuCauQr.hoaDonId._id).slice(-8).toUpperCase()}`
+    : "";
 
   return (
     <section className="staff-page">
@@ -90,24 +121,74 @@ export default function YeuCauHoTro() {
                     </Badge>
                   </div>
                   {item.noiDung && <p className="mb-2">{item.noiDung}</p>}
+                  {item.loaiYeuCau === "traMon" && <p className="mb-2 fw-semibold">
+                    Khách yêu cầu trả {item.soLuongTra} × {item.tenMon}
+                    {(() => {
+                      const mon = item.hoaDonId?.danhSachMon?.find((dongMon) => String(dongMon._id) === String(item.monHoaDonId));
+                      return mon ? ` · dự kiến hoàn ${Number(mon.gia * item.soLuongTra).toLocaleString("vi-VN")}đ` : "";
+                    })()}
+                  </p>}
+                  {item.loaiYeuCau === "thanhToan" && <section className="support-payment-receipt">
+                    <h3>Hóa đơn bàn {item.banId?.ten}</h3>
+                    <small>Mã hóa đơn: {item.hoaDonId?._id ? String(item.hoaDonId._id).slice(-8).toUpperCase() : "Không rõ"}</small>
+                    <div className="support-payment-items">
+                      {item.hoaDonId?.danhSachMon?.map((mon) => <div key={mon._id}>
+                        <span>{mon.ten} × {mon.soLuong}</span>
+                        <strong>{Number(mon.gia * mon.soLuong).toLocaleString("vi-VN")}đ</strong>
+                      </div>)}
+                    </div>
+                    <div className="support-payment-total">
+                      <span>Tổng cộng</span>
+                      <strong>{Number(item.hoaDonId?.tongTien || 0).toLocaleString("vi-VN")}đ</strong>
+                    </div>
+                    {layUrlQrThanhToan(item.hoaDonId, cauHinhThanhToan) ? <div className="support-payment-qr">
+                      <img src={layUrlQrThanhToan(item.hoaDonId, cauHinhThanhToan)} alt={`Mã QR thanh toán ${Number(item.hoaDonId?.tongTien || 0).toLocaleString("vi-VN")} đồng`} />
+                      <Button variant="outline-secondary" size="sm" onClick={() => setYeuCauQr(item)}>
+                        Phóng to mã QR cho khách quét
+                      </Button>
+                    </div> : <p className="small text-secondary mb-0">Chưa có mã QR thanh toán.</p>}
+                  </section>}
                   <div className="small text-secondary">
                     Gửi lúc: {item.createdAt ? new Date(item.createdAt).toLocaleString("vi-VN") : "Không rõ"}
                   </div>
                 </div>
-                <div className="d-flex align-items-start">
-                  <Button
+                <div className="d-flex align-items-start gap-2 flex-wrap">
+                  {item.loaiYeuCau === "traMon" ? <>
+                    <Button variant="success" disabled={dangXuLyId === item._id} onClick={() => hoanTatYeuCau(item._id, "chapNhan")}>
+                      {dangXuLyId === item._id ? "Đang cập nhật..." : "Chấp nhận trả"}
+                    </Button>
+                    <Button variant="outline-danger" disabled={dangXuLyId === item._id} onClick={() => hoanTatYeuCau(item._id, "tuChoi")}>
+                      Từ chối
+                    </Button>
+                  </> : item.loaiYeuCau === "thanhToan" ? <>
+                    <Button variant="success" disabled={dangXuLyId === item._id} onClick={() => hoanTatYeuCau(item._id, "chapNhan")}>Xác nhận đã thu tiền</Button>
+                    <Button variant="outline-secondary" disabled={dangXuLyId === item._id} onClick={() => hoanTatYeuCau(item._id, "tuChoi")}>Đóng yêu cầu</Button>
+                  </> : <Button
                     variant="success"
                     disabled={dangXuLyId === item._id}
                     onClick={() => hoanTatYeuCau(item._id)}
                   >
                     {dangXuLyId === item._id ? "Đang cập nhật..." : "Đánh dấu đã xử lý"}
-                  </Button>
+                  </Button>}
                 </div>
               </Card.Body>
             </Card>
           ))}
         </div>
       )}
+      <Modal show={Boolean(yeuCauQr)} onHide={() => setYeuCauQr(null)} centered>
+        <Modal.Header closeButton>
+          <Modal.Title>Mã QR thanh toán · Bàn {yeuCauQr?.banId?.ten}</Modal.Title>
+        </Modal.Header>
+        <Modal.Body className="staff-payment-qr-modal">
+          {qrDangMo ? <>
+            <img src={qrDangMo} alt={`Mã QR thanh toán ${tongTienQr.toLocaleString("vi-VN")} đồng`} />
+            <strong>{tongTienQr.toLocaleString("vi-VN")} đ</strong>
+            <p>Nội dung chuyển khoản: {maHoaDonQr}</p>
+            <small>Sau khi khách chuyển khoản, xác nhận đã nhận tiền để kết thúc hóa đơn.</small>
+          </> : <p>Không tạo được mã QR cho hóa đơn này.</p>}
+        </Modal.Body>
+      </Modal>
     </section>
   );
 }

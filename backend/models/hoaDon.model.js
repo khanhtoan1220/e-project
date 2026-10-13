@@ -32,6 +32,7 @@ const chiTietHoaDonSchema = new mongoose.Schema({
       "daXong",
       "daPhucVu",
       "daHuy",
+      "daTra",
     ],
     default: "choXacNhan",
   },

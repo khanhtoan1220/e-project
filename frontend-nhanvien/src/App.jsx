@@ -1,4 +1,4 @@
-import React, { useReducer } from "react";
+import React, { useCallback, useReducer, useState } from "react";
 import { Routes, Route, Navigate } from "react-router-dom";
 import { AppContext } from "./hooks/context";
 import { STATE } from "./hooks/INIT_STATE";
@@ -9,6 +9,7 @@ import Login from "./pages/Login";
 import PhucVu from "./pages/PhucVu";
 import NhaBep from "./pages/NhaBep";
 import YeuCauHoTro from "./pages/YeuCauHoTro";
+import Pusher from "pusher-js";
 
 // Import CSS Bootstrap
 import "bootstrap/dist/css/bootstrap.min.css";
@@ -16,6 +17,29 @@ import "./index.css";
 
 function App() {
   const [state, dispatch] = useReducer(reducer, STATE);
+  const [soDoBanVersion, setSoDoBanVersion] = useState(0);
+  const refreshSoDoBan = useCallback(() => setSoDoBanVersion((version) => version + 1), []);
+
+  React.useEffect(() => {
+    if (!state.isAuthenticated || !["admin", "phucVu"].includes(state.user?.vaiTro)) return;
+    const key = import.meta.env.VITE_PUSHER_KEY;
+    const cluster = import.meta.env.VITE_PUSHER_CLUSTER;
+    if (!key || !cluster) return;
+
+    const pusher = new Pusher(key, { cluster });
+    const channel = pusher.subscribe("nhan-vien-channel");
+    const capNhatBan = (data = {}) => {
+      if (data.banId || data.hoaDonId) refreshSoDoBan();
+    };
+    channel.bind("yeu-cau-moi", capNhatBan);
+    channel.bind("dat-ban-moi", capNhatBan);
+    channel.bind("chuyen-ban", capNhatBan);
+    return () => {
+      channel.unbind_all();
+      channel.unsubscribe();
+      pusher.disconnect();
+    };
+  }, [state.isAuthenticated, state.user?.vaiTro, refreshSoDoBan]);
 
   return (
     <AppContext.Provider value={{ state, dispatch }}>
@@ -39,7 +63,7 @@ function App() {
           />
 
           {/* Trang Phục vụ */}
-          <Route path="phuc-vu" element={<PhucVu />} />
+          <Route path="phuc-vu" element={<PhucVu soDoBanVersion={soDoBanVersion} refreshSoDoBan={refreshSoDoBan} />} />
 
           {/* Trang Nhà bếp */}
           <Route path="nha-bep" element={<NhaBep />} />

@@ -1,4 +1,4 @@
-import QrGoiMon from "../components/QrGoiMon";
+﻿import QrGoiMon from "../components/QrGoiMon";
 import ENV from "../constants/ENV";
 import React, { useEffect, useState } from "react";
 import {
@@ -16,17 +16,16 @@ import {
 import {
   get_sodoban_service,
   get_hoadon_ban_service,
+  get_cau_hinh_thanh_toan_service,
   get_danhmuc_menu_service,
   get_monan_menu_service,
   goi_mon_service,
   thanh_toan_service,
-  don_ban_service,
   chuyen_ban_service,
-  bung_mon_service,
   duyet_mon_service,
 } from "../services/staff_service";
 
-export default function PhucVu() {
+export default function PhucVu({ soDoBanVersion = 0, refreshSoDoBan }) {
   const [banList, setBanList] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
@@ -34,8 +33,11 @@ export default function PhucVu() {
 
   // State phục vụ gọi món (Order Modal)
   const [showOrderModal, setShowOrderModal] = useState(false);
+  const [showPaymentQrModal, setShowPaymentQrModal] = useState(false);
+  const [tabHoaDon, setTabHoaDon] = useState("orderMoi");
   const [activeBan, setActiveBan] = useState(null);
   const [activeHoaDon, setActiveHoaDon] = useState(null);
+  const [cauHinhThanhToan, setCauHinhThanhToan] = useState(null);
   const [danhMucList, setDanhMucList] = useState([]);
   const [monAnList, setMonAnList] = useState([]);
   const [selectedDanhMuc, setSelectedDanhMuc] = useState("");
@@ -45,10 +47,18 @@ export default function PhucVu() {
   const [trangThaiLoc, setTrangThaiLoc] = useState("");
   const tenTrangThaiMon = {
     choXacNhan: "Chờ xác nhận", choCheBien: "Chờ chế biến", dangLam: "Đang làm",
-    daXong: "Chờ mang ra bàn", daPhucVu: "Đã phục vụ", daHuy: "Đã hủy",
+    daXong: "Đã hoàn thành", daPhucVu: "Đã hoàn thành", daHuy: "Đã hủy", daTra: "Đã trả",
   };
   const [cart, setCart] = useState([]);
   const [ghiChuMon, setGhiChuMon] = useState({});
+  const tongTienHoaDon = Number(activeHoaDon?.tongTien || 0);
+  const maNganHangQr = cauHinhThanhToan?.maNganHang;
+  const soTaiKhoanQr = cauHinhThanhToan?.soTaiKhoan;
+  const tenChuTaiKhoanQr = cauHinhThanhToan?.tenChuTaiKhoan;
+  const noiDungQr = activeHoaDon?._id ? `HD${String(activeHoaDon._id).slice(-8).toUpperCase()}` : "";
+  const qrThanhToan = tongTienHoaDon > 0
+    ? `https://img.vietqr.io/image/MB-0352983780-compact2.png?amount=${encodeURIComponent(tongTienHoaDon)}&addInfo=${encodeURIComponent(noiDungQr)}&accountName=NGUYEN%20KHANH%20TOAN`
+    : "";
   const monHienThi = monAnList.filter(mon =>
     (!selectedDanhMuc || (mon.danhMucId?._id || mon.danhMucId) === selectedDanhMuc) &&
     mon.ten.toLocaleLowerCase("vi-VN").includes(timMon.trim().toLocaleLowerCase("vi-VN"))
@@ -92,26 +102,19 @@ export default function PhucVu() {
 
   useEffect(() => {
     loadSodoBan();
+    get_cau_hinh_thanh_toan_service().then(setCauHinhThanhToan).catch(() => setCauHinhThanhToan(null));
   }, []);
 
-  // Hoàn tất dọn bàn
-  const handleHoanTatDonBan = async (banId, tenBan) => {
-    try {
-      setError("");
-      setMsg("");
-      await don_ban_service(banId);
-      setMsg(`Bàn [${tenBan}] đã sạch sẽ, chuyển sang trạng thái sẵn sàng!`);
-      loadSodoBan();
-    } catch (err) {
-      setError(err.toString());
-    }
-  };
+  useEffect(() => {
+    if (soDoBanVersion > 0) loadSodoBan();
+  }, [soDoBanVersion]);
 
   // Click vào bàn để xử lý gọi món / xem hóa đơn
-  const handleOpenOrderModal = async (ban) => {
+  const handleOpenOrderModal = async (ban, tabMoDau = "orderMoi") => {
     try {
       setError("");
       setActiveBan(ban);
+      setTabHoaDon(tabMoDau);
       setMsg("");
       setTimMon("");
       setSelectedDanhMuc("");
@@ -227,9 +230,7 @@ export default function PhucVu() {
       setError("");
       setMsg("");
       await thanh_toan_service(activeHoaDon._id);
-      setMsg(
-        `Thanh toán thành công cho [${activeBan.ten}]! Vui lòng dọn dẹp bàn.`,
-      );
+      setMsg(`Thanh toán thành công cho [${activeBan.ten}]; bàn đã chuyển về trạng thái trống.`);
       setShowOrderModal(false);
       loadSodoBan();
     } catch (err) {
@@ -261,19 +262,6 @@ export default function PhucVu() {
     }
   };
 
-  // Xác nhận bưng món
-  const handleBungMon = async (monItemObjectId) => {
-    try {
-      setError("");
-      await bung_mon_service(activeHoaDon._id, monItemObjectId);
-      // Đồng bộ hóa đơn mới nhất sau khi bưng
-      const updatedHoaDon = await get_hoadon_ban_service(activeBan._id);
-      setActiveHoaDon(updatedHoaDon);
-    } catch (err) {
-      setError(err.toString());
-    }
-  };
-
   // Phục vụ duyệt các món khách tự gọi qua QR để báo Bếp nấu
   const handleDuyetMon = async () => {
     try {
@@ -290,6 +278,29 @@ export default function PhucVu() {
     }
   };
 
+  const handleYeuCauThanhToan = async () => {
+    if (!activeBan?._id || !activeHoaDon?._id) return;
+    try {
+      setError("");
+      const hoaDonMoi = await get_hoadon_ban_service(activeBan._id);
+      setActiveHoaDon(hoaDonMoi);
+      setTabHoaDon("daGoi");
+      setShowOrderModal(true);
+    } catch (err) {
+      setError(err.toString());
+    }
+  };
+
+  useEffect(() => {
+    if (!activeBan?._id || !soDoBanVersion) return;
+    const banMoi = banList.find((ban) => ban._id === activeBan._id);
+    if (!banMoi || banMoi.trangThai !== "dangSuDung") return;
+    if (String(banMoi.hoaDon?._id || banMoi.hoaDon || "") !== String(activeHoaDon?._id || "")) return;
+    get_hoadon_ban_service(activeBan._id)
+      .then(setActiveHoaDon)
+      .catch(() => {});
+  }, [soDoBanVersion, banList, activeBan?._id, activeHoaDon?._id]);
+
   const renderBanCardStyle = (trangThai) => {
     switch (trangThai) {
       case "trong":
@@ -297,21 +308,14 @@ export default function PhucVu() {
           bg: "#f0fdf4",
           border: "#bbf7d0",
           text: "#166534",
-          status: "Trống",
+          status: "Sẵn sàng",
         };
       case "dangSuDung":
         return {
           bg: "#fef2f2",
           border: "#fca5a5",
           text: "#991b1b",
-          status: "Có khách",
-        };
-      case "choDonDep":
-        return {
-          bg: "#fef9c3",
-          border: "#fde047",
-          text: "#854d0e",
-          status: "Chờ dọn",
+          status: "Đang phục vụ",
         };
       case "datTruoc":
         return {
@@ -368,9 +372,8 @@ export default function PhucVu() {
           <option value="tang1">Tầng 1</option><option value="tang2">Tầng 2</option><option value="tang3">Tầng 3</option>
         </Form.Select>
         <Form.Select aria-label="Lọc trạng thái bàn" value={trangThaiLoc} onChange={e => setTrangThaiLoc(e.target.value)}>
-          <option value="">Tất cả trạng thái</option><option value="trong">Trống</option>
-          <option value="dangSuDung">Có khách</option><option value="datTruoc">Đặt trước</option>
-          <option value="choDonDep">Chờ dọn</option>
+          <option value="">Tất cả trạng thái</option><option value="trong">Sẵn sàng</option>
+          <option value="dangSuDung">Đang phục vụ</option><option value="datTruoc">Đặt trước</option>
         </Form.Select>
         <span className="text-secondary small">{banHienThi.length} bàn</span>
       </div>
@@ -426,30 +429,25 @@ export default function PhucVu() {
 
                   {/* Nút hành động dẹt */}
                   <div className="d-flex flex-column gap-2 mt-2">
-
-
                     {ban.trangThai === "dangSuDung" && (
-                      <Button
-                        variant="dark"
-                        size="sm"
-                        className="fw-semibold py-1 rounded-1 border-0"
-                        onClick={() => handleOpenOrderModal(ban)}
-                      >
-                        Gọi món
-                      </Button>
-                    )}
-
-
-
-                    {ban.trangThai === "choDonDep" && (
-                      <Button
-                        variant="warning"
-                        size="sm"
-                        className="fw-semibold py-1 rounded-1 text-dark border-0"
-                        onClick={() => handleHoanTatDonBan(ban._id, ban.ten)}
-                      >
-                        Dọn xong bàn
-                      </Button>
+                      <>
+                        <Button
+                          variant="outline-secondary"
+                          size="sm"
+                          className="fw-semibold py-1 rounded-1"
+                          onClick={() => handleOpenOrderModal(ban, "orderMoi")}
+                        >
+                          Thực đơn
+                        </Button>
+                        <Button
+                          variant="dark"
+                          size="sm"
+                          className="fw-semibold py-1 rounded-1 border-0"
+                          onClick={() => handleOpenOrderModal(ban, "daGoi")}
+                        >
+                          Thanh toán
+                        </Button>
+                      </>
                     )}
                   </div>
                 </div>
@@ -465,17 +463,17 @@ export default function PhucVu() {
         {activeBan && activeHoaDon && <>
           <Modal.Header closeButton={!dangGuiMon}>
             <div>
-              <Modal.Title>Gọi món · {activeBan.ten}</Modal.Title>
+              <Modal.Title>{tabHoaDon === "daGoi" ? "Thanh toán · " : "Thực đơn · "}{activeBan.ten}</Modal.Title>
               <div className="text-secondary small mt-1">
                 {activeBan.khuVuc === "tang1" ? "Tầng 1" : activeBan.khuVuc === "tang2" ? "Tầng 2" : "Tầng 3"}
-                {" · "}Chọn món và kiểm tra trước khi gửi
+                {tabHoaDon === "daGoi" ? " · Kiểm tra hóa đơn và mã QR thanh toán" : " · Chọn món và kiểm tra trước khi gửi"}
               </div>
             </div>
           </Modal.Header>
           {error && <Alert variant="danger" className="m-3 mb-0">{error}</Alert>}
           {msg && <Alert variant="success" className="m-3 mb-0">{msg}</Alert>}
-          <Modal.Body className="order-body">
-            <section className="menu-panel" aria-label="Thực đơn">
+          <Modal.Body className={`order-body ${tabHoaDon === "daGoi" ? "payment-view" : ""}`}>
+            {tabHoaDon !== "daGoi" && <section className="menu-panel" aria-label="Thực đơn">
               <div className="menu-tools">
                 <Form.Control type="search" placeholder="Tìm tên món ăn..."
                   aria-label="Tìm món ăn" value={timMon}
@@ -522,9 +520,9 @@ export default function PhucVu() {
               {monHienThi.length === 0 && <div className="empty-state">
                 <h3>Không tìm thấy món</h3><p>Thử tên khác hoặc chọn lại danh mục.</p>
               </div>}
-            </section>
+            </section>}
             <section id="staff-bill-panel" className="bill-panel" aria-label="Món của bàn">
-              <Tabs defaultActiveKey="orderMoi" className="bill-tabs">
+              <Tabs activeKey={tabHoaDon} onSelect={(key) => key && setTabHoaDon(key)} className="bill-tabs">
                 <Tab eventKey="orderMoi" title={"Đang chọn (" + cart.reduce((sum, item) => sum + item.soLuong, 0) + ")"}>
                   <div className="bill-items">
                     {cart.length === 0 ? <div className="empty-state">
@@ -566,17 +564,31 @@ export default function PhucVu() {
                     <p className="small text-secondary mt-2 mb-0">Món mới sẽ được cộng vào hóa đơn hiện tại.</p>
                   </div>
                 </Tab>
-                <Tab eventKey="daGoi" title="Món đã gọi">
+                <Tab eventKey="daGoi" title="Hóa đơn hiện tại">
                   <div className="bill-items">
                     <Button variant="outline-secondary" size="sm" className="mb-3"
                       onClick={handleTaiHoaDon}>Cập nhật trạng thái</Button>
                     {activeHoaDon.danhSachMon?.some(item => item.trangThaiMon === "choXacNhan") &&
                       <Alert variant="warning">
-                        <p>Có món khách gọi đang chờ xác nhận.</p>
+                        <p className="mb-2">Khách vừa gửi các món sau. Kiểm tra tên món, số lượng và ghi chú trước khi xác nhận:</p>
+                        <ul className="mb-3">
+                          {activeHoaDon.danhSachMon.filter(item => item.trangThaiMon === "choXacNhan").map(item => (
+                            <li key={item._id} className="mb-2">
+                              <strong>{item.ten}</strong> × {item.soLuong}
+                              {item.canNao === false && <span className="ms-2">(không cần chế biến)</span>}
+                              {item.ghiChu && <div className="small">Ghi chú: {item.ghiChu}</div>}
+                            </li>
+                          ))}
+                        </ul>
                         <Button variant="dark" size="sm" onClick={handleDuyetMon}>Duyệt món</Button>
                       </Alert>}
-                    {!activeHoaDon.danhSachMon?.length && <div className="empty-state"><p>Bàn chưa gọi món nào.</p></div>}
-                    {activeHoaDon.danhSachMon?.map(item => <div key={item._id} className="cart-item">
+                    <section className="staff-receipt">
+                      <header className="staff-receipt-heading">
+                        <div><span>HÓA ĐƠN HIỆN TẠI</span><strong>{activeBan?.ten}</strong></div>
+                        <small>Mã: {activeHoaDon._id ? String(activeHoaDon._id).slice(-8).toUpperCase() : "—"}</small>
+                      </header>
+                      {!activeHoaDon.danhSachMon?.length && <div className="empty-state"><p>Bàn chưa gọi món nào.</p></div>}
+                      {activeHoaDon.danhSachMon?.map(item => <div key={item._id} className="cart-item">
                       <div className="d-flex justify-content-between gap-2">
                         <strong>{item.ten}</strong><span>× {item.soLuong}</span>
                       </div>
@@ -587,17 +599,32 @@ export default function PhucVu() {
                         </Badge>
                       </div>
                       {item.ghiChu && <p className="dish-note mt-2 mb-0">Ghi chú: {item.ghiChu}</p>}
-                      {item.trangThaiMon === "daXong" && <Button variant="outline-dark" className="mt-2" size="sm"
-                        onClick={() => handleBungMon(item._id)}>Xác nhận đã phục vụ</Button>}
-                    </div>)}
+                      </div>)}
+                      <footer className="staff-receipt-total">
+                        <span>Tổng cộng · tạm tính</span>
+                        <strong>{tongTienHoaDon.toLocaleString("vi-VN")} đ</strong>
+                      </footer>
+                      <section className="staff-receipt-qr" aria-label="Mã QR thanh toán">
+                        <h3>Khách quét để chuyển khoản</h3>
+                        {qrThanhToan ? <>
+                          <img src={qrThanhToan} alt={`Mã QR chuyển ${tongTienHoaDon.toLocaleString("vi-VN")} đồng`} />
+                          <p>{tongTienHoaDon.toLocaleString("vi-VN")} đ · Nội dung {noiDungQr}</p>
+                          <div className="d-flex flex-wrap justify-content-center gap-2">
+                            <Button variant="outline-secondary" size="sm" onClick={() => setShowPaymentQrModal(true)}>
+                              Phóng to mã QR cho khách quét
+                            </Button>
+                            <Button variant="outline-dark" size="sm" onClick={handleYeuCauThanhToan}>
+                              Tải lại QR và hóa đơn
+                            </Button>
+                          </div>
+                        </> : <p>Chưa cấu hình thông tin tài khoản nhận tiền.</p>}
+                      </section>
+                    </section>
                   </div>
                   <div className="bill-summary">
-                    <div className="d-flex justify-content-between mb-3">
-                      <span>Tổng hóa đơn</span><strong>{Number(activeHoaDon.tongTien).toLocaleString("vi-VN")} đ</strong>
-                    </div>
                     <div className="d-flex gap-2">
                       <Button variant="outline-secondary" disabled={dangGuiMon || cart.length > 0} onClick={handleOpenChuyenBan}>Chuyển bàn</Button>
-                      <Button variant="dark" className="flex-grow-1" disabled={dangGuiMon || cart.length > 0} onClick={handleThanhToan}>Thanh toán</Button>
+                      <Button variant="dark" className="flex-grow-1" disabled={dangGuiMon || cart.length > 0} onClick={handleThanhToan}>Xác nhận đã thu tiền</Button>
                     </div>
                     {cart.length > 0 && <p className="small text-secondary mt-2 mb-0">Gửi hoặc bỏ món đang chọn trước khi chuyển bàn, thanh toán.</p>}
                   </div>
@@ -606,6 +633,20 @@ export default function PhucVu() {
             </section>
           </Modal.Body>
         </>}
+      </Modal>
+
+      <Modal show={showPaymentQrModal} onHide={() => setShowPaymentQrModal(false)} centered>
+        <Modal.Header closeButton>
+          <Modal.Title>Mã QR thanh toán · {activeBan?.ten}</Modal.Title>
+        </Modal.Header>
+        <Modal.Body className="staff-payment-qr-modal">
+          {qrThanhToan ? <>
+            <img src={qrThanhToan} alt={`Mã QR chuyển ${tongTienHoaDon.toLocaleString("vi-VN")} đồng`} />
+            <strong>{tongTienHoaDon.toLocaleString("vi-VN")} đ</strong>
+            <p>Nội dung chuyển khoản: {noiDungQr}</p>
+            <small>Sau khi khách chuyển khoản, xác nhận đã nhận tiền để kết thúc hóa đơn.</small>
+          </> : <p>Chưa cấu hình thông tin tài khoản nhận tiền.</p>}
+        </Modal.Body>
       </Modal>
 
       {/* --- POPUP CHUYỂN BÀN --- */}
@@ -668,3 +709,6 @@ export default function PhucVu() {
     </div>
   );
 }
+
+
+

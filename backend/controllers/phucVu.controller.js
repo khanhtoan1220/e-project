@@ -1,10 +1,22 @@
 const BanAn = require("../models/banAn.model");
 const HoaDon = require("../models/hoaDon.model");
 const Menu = require("../models/menu.model");
+const HoTro = require("../models/hoTro.model");
 const pusher = require("../config/pusher"); // 1. Import Pusher
+
+exports.layCauHinhThanhToan = async (req, res) => {
+  const maNganHang = process.env.VIETQR_BANK_ID;
+  const soTaiKhoan = process.env.VIETQR_ACCOUNT_NO;
+  const tenChuTaiKhoan = process.env.VIETQR_ACCOUNT_NAME;
+  if (!maNganHang || !soTaiKhoan || !tenChuTaiKhoan) {
+    return res.status(503).json({ message: "Chưa cấu hình tài khoản nhận tiền." });
+  }
+  res.json({ maNganHang, soTaiKhoan, tenChuTaiKhoan });
+};
 
 exports.laySoDoBan = async (req, res) => {
   try {
+    await BanAn.updateMany({ trangThai: "choDonDep" }, { trangThai: "trong" }).exec();
     const list = await BanAn.find().populate("hoaDon").exec();
     res.json(list);
   } catch (error) {
@@ -40,7 +52,7 @@ exports.goiMon = async (req, res) => {
       danhSachMon.push({
         menuId: mon._id, ten: mon.ten, gia: mon.gia, soLuong: item.soLuong,
         ghiChu: item.ghiChu, canNao: mon.canNao,
-        trangThaiMon: mon.canNao === false ? "daXong" : "choCheBien",
+        trangThaiMon: laKhach ? "choXacNhan" : (mon.canNao === false ? "daXong" : "choCheBien"),
       });
       thanhTien += mon.gia * item.soLuong;
     }
@@ -54,7 +66,7 @@ exports.goiMon = async (req, res) => {
     if (laKhach) {
       pusher.trigger("nhan-vien-channel", "yeu-cau-moi", suKien).catch(console.error);
     }
-    if (danhSachMon.some((mon) => mon.trangThaiMon === "choCheBien")) {
+    if (!laKhach && danhSachMon.some((mon) => mon.trangThaiMon === "choCheBien")) {
       pusher.trigger("bep-channel", "co-don-moi", suKien).catch(console.error);
     }
     res.json(capNhat);
@@ -89,21 +101,20 @@ exports.thanhToan = async (req, res) => {
       return res.status(404).json({ message: "Hóa đơn không tồn tại" });
     }
 
-    // Kiểm tra chặt chẽ: Toàn bộ các món ăn trong hóa đơn phải được giải quyết (Đã bưng 'daPhucVu' hoặc Đã hủy 'daHuy')
-    // Nếu còn bất kỳ món nào có trạng thái khác (đang chờ bếp 'choXacNhan', đang nấu 'dangLam', hoặc bếp xong nhưng chưa bưng 'daXong') -> Chặn thanh toán
+    // Chỉ cho thanh toán khi các món đã hoàn thành hoặc đã được xử lý hủy/trả.
     const conMonChuaHoanThanh = hoaDon.danhSachMon.some(
-      (mon) => mon.trangThaiMon !== "daPhucVu" && mon.trangThaiMon !== "daHuy",
+      (mon) => !["daXong", "daPhucVu", "daHuy", "daTra"].includes(mon.trangThaiMon),
     );
     if (conMonChuaHoanThanh) {
       return res.status(400).json({
         message:
-          "Không thể thanh toán! Bàn ăn vẫn còn món chưa phục vụ xong. Vui lòng xác nhận 'Đã bưng' các món đã nấu xong, hoặc hủy các món chưa chế biến trước khi tính tiền.",
+          "Không thể thanh toán vì vẫn còn món đang chờ xác nhận hoặc chế biến.",
       });
     }
 
     const daThanhToan = await HoaDon.findOneAndUpdate(
       { _id: hoaDon._id, trangThai: "chuaThanhToan",
-        danhSachMon: { $not: { $elemMatch: { trangThaiMon: { $nin: ["daPhucVu", "daHuy"] } } } } },
+        danhSachMon: { $not: { $elemMatch: { trangThaiMon: { $nin: ["daXong", "daPhucVu", "daHuy", "daTra"] } } } } },
       { trangThai: "daThanhToan", thoiGianRa: new Date() },
       { new: true },
     );
@@ -111,43 +122,18 @@ exports.thanhToan = async (req, res) => {
       return res.status(409).json({ message: "Hóa đơn đã kết thúc hoặc có món mới chưa phục vụ." });
     }
     await BanAn.findOneAndUpdate({ _id: daThanhToan.banId, hoaDon: hoaDon._id }, {
-      trangThai: "choDonDep", hoaDon: null,
+      trangThai: "trong", hoaDon: null,
     });
-
-    pusher.trigger("nhan-vien-channel", "yeu-cau-don-ban", {
-      message: `Khách đã thanh toán, vui lòng dọn dẹp bàn!`,
-      banId: hoaDon.banId,
-    });
+    await HoTro.updateMany(
+      { hoaDonId: hoaDon._id, loaiYeuCau: "thanhToan", trangThai: "choXuLy" },
+      { trangThai: "hoanTat", ketQuaXuLy: "chapNhan" },
+    );
 
     res.json({ message: "Thanh toán thành công", hoaDon: daThanhToan });
   } catch (error) {
     res.status(400).json({ message: error.message });
   }
 };
-exports.hoanTatDonBan = async (req, res) => {
-  try {
-    const idBan = req.params.id;
-    const ban = await BanAn.findById(idBan).exec();
-
-    if (!ban) {
-      return res.status(404).json({ message: "Không tìm thấy bàn dọn dẹp" });
-    }
-
-    if (ban.trangThai !== "choDonDep") {
-      return res
-        .status(400)
-        .json({ message: "Bàn này hiện không ở trạng thái chờ dọn dẹp" });
-    }
-
-    ban.trangThai = "trong";
-    await ban.save();
-
-    res.json({ message: "Dọn dẹp bàn thành công, bàn đã trống", data: ban });
-  } catch (error) {
-    res.status(400).json({ message: error.message });
-  }
-};
-
 exports.chuyenBan = async (req, res) => {
   try {
     const { banCuId, banMoiId } = req.body;
@@ -206,33 +192,6 @@ exports.chuyenBan = async (req, res) => {
   }
 };
 
-// Phục vụ xác nhận đã bưng món ra cho khách (daXong -> daPhucVu)
-exports.xacNhanPhucVuMon = async (req, res) => {
-  try {
-    const { hoaDonId, monItemObjectId } = req.body;
-    const hoaDon = await HoaDon.findById(hoaDonId).exec();
-    if (!hoaDon) return res.status(404).json({ message: "Không thấy hóa đơn" });
-
-    const monItem = hoaDon.danhSachMon.id(monItemObjectId);
-    if (!monItem)
-      return res
-        .status(404)
-        .json({ message: "Không tìm thấy món ăn trong đơn" });
-
-    if (monItem.trangThaiMon !== "daXong") {
-      return res.status(400).json({
-        message: "Chỉ có thể xác nhận bưng những món bếp đã nấu xong!",
-      });
-    }
-
-    monItem.trangThaiMon = "daPhucVu";
-    await hoaDon.save();
-    res.json({ message: `Đã xác nhận phục vụ món "${monItem.ten}" lên bàn!` });
-  } catch (error) {
-    res.status(400).json({ message: error.message });
-  }
-};
-
 // Phục vụ xác nhận duyệt các món khách tự gọi để gửi xuống Bếp (choXacNhan -> choCheBien)
 exports.duyetMonAnKhachGoi = async (req, res) => {
   try {
@@ -242,13 +201,15 @@ exports.duyetMonAnKhachGoi = async (req, res) => {
       return res.status(404).json({ message: "Không tìm thấy hóa đơn" });
 
     let coMonDuyet = false;
-    let coMonBaoBep = false; // Nhận biết xem có cần bắn thông báo cho bếp hay không
+    let coMonBaoBep = false;
+    let coMonKhongCanNao = false;
 
     hoaDon.danhSachMon.forEach((mon) => {
       if (mon.trangThaiMon === "choXacNhan") {
         if (mon.canNao === false) {
-          // Đồ uống/món ăn liền không cần nấu -> chuyển thẳng sang daXong chờ phục vụ bưng
+          // Đồ uống/món ăn liền không cần nấu được đánh dấu hoàn thành ngay.
           mon.trangThaiMon = "daXong";
+          coMonKhongCanNao = true;
         } else {
           // Món cần nấu -> chuyển sang choCheBien báo bếp
           mon.trangThaiMon = "choCheBien";
@@ -266,20 +227,19 @@ exports.duyetMonAnKhachGoi = async (req, res) => {
 
     await hoaDon.save();
 
-    // Chỉ búng Realtime cho bếp nếu trong đơn hàng có món cần đầu bếp chế biến
     if (coMonBaoBep) {
       pusher.trigger("bep-channel", "co-don-moi", {
         message: `Đơn gọi món tại [${hoaDon.banId.ten}] đã được phục vụ duyệt, bắt đầu chế biến!`,
         hoaDonId: hoaDon._id,
       });
-    } else {
-      // Nếu chỉ có đồ uống, búng thông báo nội bộ báo phục vụ tự lấy bia nước ngọt bưng ra cho khách
+    }
+    if (coMonKhongCanNao) {
       pusher.trigger("nhan-vien-channel", "yeu-cau-moi", {
-        message: `Đồ uống tại [${hoaDon.banId.ten}] đã được duyệt, phục vụ vui lòng tự lấy tủ bưng ra bàn!`,
-        banId: hoaDon.banId,
+        message: `Món không cần chế biến tại [${hoaDon.banId.ten}] đã được nhân viên xác nhận.`,
+        banId: hoaDon.banId._id,
+        hoaDonId: hoaDon._id,
       });
     }
-
     res.json({ message: "Đã duyệt gửi món ăn xuống Bếp thành công!", hoaDon });
   } catch (error) {
     res.status(400).json({ message: error.message });

@@ -13,9 +13,14 @@ const yeuCauHoTroSchema = new mongoose.Schema(
     },
     loaiYeuCau: {
       type: String,
-      enum: ["goiNhanVien", "themDungCu", "themNuoc", "thanhToan", "khac"],
+      enum: ["goiNhanVien", "themDungCu", "themNuoc", "thanhToan", "traMon", "khac"],
       required: true,
     },
+    monHoaDonId: { type: mongoose.Schema.Types.ObjectId },
+    tenMon: String,
+    soLuongTra: { type: Number, min: 1 },
+    giaHoanTra: { type: Number, min: 0 },
+    ketQuaXuLy: { type: String, enum: ["chapNhan", "tuChoi"] },
     noiDung: String,
     trangThai: {
       type: String,

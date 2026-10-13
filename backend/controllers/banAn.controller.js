@@ -1,9 +1,11 @@
 const BanAn = require("../models/banAn.model");
 const HoaDon = require("../models/hoaDon.model");
+const HoTro = require("../models/hoTro.model");
 const pusher = require("../config/pusher");
 
 exports.getAll = async (req, res) => {
   try {
+    await BanAn.updateMany({ trangThai: "choDonDep" }, { trangThai: "trong" }).exec();
     const list = await BanAn.find().exec();
     res.json(list);
   } catch (error) {
@@ -37,6 +39,12 @@ exports.moBanChoKhach = async (req, res) => {
     const { id } = req.params;
     let ban = await BanAn.findById(id).exec();
     if (!ban) return res.status(404).json({ message: "Không tìm thấy bàn." });
+
+    if (ban.trangThai === "choDonDep") {
+      ban.trangThai = "trong";
+      ban.hoaDon = null;
+      await ban.save();
+    }
 
     if (ban.trangThai === "dangSuDung" && ban.hoaDon) {
       const hoaDonHienTai = await HoaDon.findOne({
@@ -91,11 +99,16 @@ exports.getThongTinBanChoKhach = async (req, res) => {
       return res.status(409).json({ message: "Bàn chưa có hóa đơn đang hoạt động." });
     }
     const hoaDon = ban.trangThai === "dangSuDung" ? ban.hoaDon : null;
+    const danhSachYeuCau = hoaDon
+      ? await HoTro.find({ hoaDonId: hoaDon._id, loaiYeuCau: { $in: ["traMon", "thanhToan"] } }).sort({ createdAt: -1 }).exec()
+      : [];
     res.json({
       banId: ban._id, tenBan: ban.ten, khuVuc: ban.khuVuc,
       trangThai: ban.trangThai, hoaDonId: hoaDon?._id || null,
       tongTienTamTinh: hoaDon?.tongTien || 0,
       danhSachMonDaGoi: hoaDon?.danhSachMon || [],
+      danhSachYeuCauTraMon: danhSachYeuCau.filter((item) => item.loaiYeuCau === "traMon"),
+      danhSachYeuCauThanhToan: danhSachYeuCau.filter((item) => item.loaiYeuCau === "thanhToan"),
     });
   } catch (error) {
     res.status(400).json({ message: error.message });

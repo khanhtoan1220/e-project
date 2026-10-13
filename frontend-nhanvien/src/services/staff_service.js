@@ -60,6 +60,15 @@ export const get_hoadon_ban_service = async (banId) => {
   }
 };
 
+export const get_cau_hinh_thanh_toan_service = async () => {
+  try {
+    const res = await apiClient.get(URL.CAU_HINH_THANH_TOAN);
+    return res.data;
+  } catch (error) {
+    throw error.response?.data?.message || "Không lấy được thông tin thanh toán";
+  }
+};
+
 export const goi_mon_service = async (hoaDonId, chonMon) => {
   try {
     const res = await apiClient.post(URL.PHUC_VU_GOI_MON, {
@@ -81,15 +90,6 @@ export const thanh_toan_service = async (hoaDonId) => {
   }
 };
 
-export const don_ban_service = async (banId) => {
-  try {
-    const res = await apiClient.patch(URL.PHUC_VU_DON_BAN(banId));
-    return res.data;
-  } catch (error) {
-    throw error.response?.data?.message || "Dọn bàn thất bại";
-  }
-};
-
 export const chuyen_ban_service = async (banCuId, banMoiId) => {
   try {
     const res = await apiClient.post(URL.PHUC_VU_CHUYEN_BAN, {
@@ -99,18 +99,6 @@ export const chuyen_ban_service = async (banCuId, banMoiId) => {
     return res.data;
   } catch (error) {
     throw error.response?.data?.message || "Chuyển bàn thất bại";
-  }
-};
-
-export const bung_mon_service = async (hoaDonId, monItemObjectId) => {
-  try {
-    const res = await apiClient.patch(URL.PHUC_VU_BUNG_MON, {
-      hoaDonId,
-      monItemObjectId,
-    });
-    return res.data;
-  } catch (error) {
-    throw error.response?.data?.message || "Xác nhận bưng món thất bại";
   }
 };
 
@@ -133,9 +121,9 @@ export const get_danhsach_hotro_service = async () => {
   }
 };
 
-export const xac_nhan_hotro_service = async (id) => {
+export const xac_nhan_hotro_service = async (id, ketQua) => {
   try {
-    const res = await apiClient.patch(URL.XAC_NHAN_HO_TRO(id));
+    const res = await apiClient.patch(URL.XAC_NHAN_HO_TRO(id), ketQua ? { ketQua } : {});
     return res.data;
   } catch (error) {
     throw error.response?.data?.message || "Xác nhận hỗ trợ thất bại";

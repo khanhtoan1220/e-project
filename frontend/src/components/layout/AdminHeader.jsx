@@ -22,45 +22,39 @@ export default function AdminHeader() {
   };
 
   useEffect(() => {
-    // Khởi tạo Pusher Client lắng nghe Realtime từ Backend
-    const pusher = new Pusher("8bbb5ee6c07004e372dd", {
-      cluster: "ap1",
-      encrypted: true
-    });
+    const key = import.meta.env.VITE_PUSHER_KEY;
+    const cluster = import.meta.env.VITE_PUSHER_CLUSTER;
+    if (!key || !cluster) return;
+
+    const pusher = new Pusher(key, { cluster, forceTLS: true });
 
     const channel = pusher.subscribe("nhan-vien-channel");
     
-    // Sự kiện 1: Khách đặt bàn mới
-    channel.bind("dat-ban-moi", (data) => {
-      playNotificationSound();
-      const newNoti = {
-        id: Date.now(),
-        title: "Đặt bàn mới",
-        message: data.message || "Có yêu cầu đặt bàn mới từ khách hàng.",
-        time: new Date().toLocaleTimeString("vi-VN", { hour: "2-digit", minute: "2-digit" }),
-        link: "/admin/dat-ban"
-      };
-      setNotifications(prev => [newNoti, ...prev]);
-      setUnreadCount(prev => prev + 1);
-    });
-
-    // Sự kiện 2: Khách hàng gọi phục vụ / hỗ trợ bàn ăn
-    channel.bind("yeu-cau-moi", (data) => {
-      playNotificationSound();
-      const newNoti = {
-        id: Date.now(),
-        title: "Yêu cầu hỗ trợ",
-        message: data.message || "Bàn ăn yêu cầu nhân viên hỗ trợ!",
-        time: new Date().toLocaleTimeString("vi-VN", { hour: "2-digit", minute: "2-digit" }),
-        link: "/admin/ban-an"
-      };
-      setNotifications(prev => [newNoti, ...prev]);
-      setUnreadCount(prev => prev + 1);
+    const events = {
+      "dat-ban-moi": { title: "Đặt bàn mới", fallback: "Có yêu cầu đặt bàn mới từ khách hàng.", link: "/admin/dat-ban" },
+      "yeu-cau-moi": { title: "Yêu cầu hỗ trợ", fallback: "Bàn ăn yêu cầu nhân viên hỗ trợ!", link: "/admin/ban-an" },
+      "mon-da-xong": { title: "Món đã hoàn thành", fallback: "Bếp vừa hoàn thành món ăn.", link: "/admin/ban-an" },
+      "chuyen-ban": { title: "Bàn vừa được chuyển", fallback: "Có cập nhật chuyển bàn.", link: "/admin/ban-an" },
+    };
+    Object.entries(events).forEach(([eventName, info]) => {
+      channel.bind(eventName, (data = {}) => {
+        playNotificationSound();
+        const newNoti = {
+          id: `${Date.now()}-${Math.random()}`,
+          title: info.title,
+          message: data.message || info.fallback,
+          time: new Date().toLocaleTimeString("vi-VN", { hour: "2-digit", minute: "2-digit" }),
+          link: info.link,
+        };
+        setNotifications(prev => [newNoti, ...prev]);
+        setUnreadCount(prev => prev + 1);
+      });
     });
 
     return () => {
       channel.unbind_all();
       channel.unsubscribe();
+      pusher.disconnect();
     };
   }, []);
 
@@ -78,7 +72,24 @@ export default function AdminHeader() {
     setUnreadCount(0);
   };
 
+  const dismissNotification = (id) => {
+    setNotifications((current) => current.filter((item) => item.id !== id));
+  };
+
   return (
+    <>
+    <div className="admin-live-notifications" aria-live="polite" aria-label="Thông báo mới">
+      {notifications.map((noti) => (
+        <section className="admin-live-notification" key={noti.id}>
+          <header>
+            <strong>{noti.title}</strong>
+            <button type="button" aria-label="Đóng thông báo" onClick={() => dismissNotification(noti.id)}>×</button>
+          </header>
+          <p>{noti.message}</p>
+          <small>{noti.time}</small>
+        </section>
+      ))}
+    </div>
     <Navbar expand="lg" className="admin-header">
       <Container fluid>
         <Navbar.Brand href="/admin" className="fw-semibold">
@@ -152,5 +163,6 @@ export default function AdminHeader() {
         </Navbar.Collapse>
       </Container>
     </Navbar>
+    </>
   );
 }

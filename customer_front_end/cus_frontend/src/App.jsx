@@ -14,6 +14,14 @@ import TableMenu from "./pages/TableMenu";
 import OrderTracking from "./pages/OrderTracking";
 import api from "./services/api";
 
+const layUrlAnh = (url) => {
+  try {
+    return new URL(url, import.meta.env.VITE_ASSET_URL || window.location.origin).toString();
+  } catch {
+    return url;
+  }
+};
+
 function App() {
   const banIdQr = new URLSearchParams(window.location.search).get("banId");
   const [page, setPage] = useState(() => banIdQr ? "order" : "home");
@@ -187,29 +195,16 @@ function App() {
           <>
             <section className="hero home-hero">
               <div className="hero-content">
-                <p className="eyebrow">
-                  NHÀ HÀNG NGON NHÀ · PHỤC VỤ TẬN TÂM
-                </p>
-
-                <h1>
-                  Bữa ngon trọn vị,
-                  phút giây đáng nhớ
-                </h1>
-
-                <p>
-                  Thưởng thức món Việt được chuẩn bị mỗi ngày trong không gian ấm cúng dành cho gia đình và bạn bè.
-                </p>
-
-                <button
-                  type="button"
-                  onClick={() => setPage("booking")}
-                >
-                  Đặt bàn ngay
-                </button>
-                <button className="hero-secondary-button" type="button" onClick={() => setPage("menu")}>
-                  Xem thực đơn
-                </button>
+                <p className="eyebrow">BẾP VIỆT · VỊ NHÀ · TÌNH THÂN</p>
+                <h1>Món ngon nóng hổi,<br />sum vầy đúng điệu</h1>
+                <p>Mâm cơm Việt thân quen, nguyên liệu tươi mỗi ngày và chút chăm chút trong từng món — mời bạn ghé NgonNhà dùng bữa.</p>
+                <div className="hero-actions">
+                  <button type="button" onClick={() => setPage("booking")}>Đặt bàn cho bữa ngon</button>
+                  <button className="hero-secondary-button" type="button" onClick={() => setPage("menu")}>Khám phá thực đơn</button>
+                </div>
+                <div className="hero-note"><span>✦</span> Nấu mới mỗi ngày <i /> Nguyên liệu chọn tươi</div>
               </div>
+              <div className="hero-food-card"><span>GỢI Ý HÔM NAY</span><strong>Bữa ngon<br />đang chờ bạn</strong><small>Vị nhà trong từng món</small></div>
             </section>
 
             <section className="home-section">
@@ -226,8 +221,8 @@ function App() {
                 <div className="featured-grid">
                   {monBanChay.map((item) => (
                     <article className="featured-card" key={item._id}>
-                      {item.mon.hinhAnh && <img src={item.mon.hinhAnh} alt={item.mon.ten} />}
-                      <div><span>ĐÃ BÁN {item.soLuongDaBan} PHẦN</span><h3>{item.mon.ten}</h3><strong>{Number(item.mon.gia).toLocaleString("vi-VN")} đ</strong></div>
+                      {item.mon.hinhAnh && <img src={layUrlAnh(item.mon.hinhAnh)} alt={item.mon.ten} loading="lazy" />}
+                      <div><span className="featured-kicker">MÓN ĐƯỢC THƯƠNG</span><h3>{item.mon.ten}</h3><p>Được thực khách NgonNhà yêu thích</p><strong>{Number(item.mon.gia).toLocaleString("vi-VN")} đ</strong></div>
                     </article>
                   ))}
                 </div>
@@ -237,10 +232,9 @@ function App() {
         )}
 
         {page === "menu" && (
-          <section className="page-section">
-            <h1>
-              Thực đơn
-            </h1>
+          <section className="page-section public-menu-page">
+            <span className="page-label">BẾP NGON MỖI NGÀY</span>
+            <h1>Chọn món cho bữa vui</h1>
 
             <p className="public-menu-intro">Tham khảo món ăn và giá trước khi ghé nhà hàng. Quý khách có thể đặt bàn trực tuyến.</p>
 

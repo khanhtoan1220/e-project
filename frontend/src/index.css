@@ -25,6 +25,26 @@ body {
 .admin-header .navbar-brand { color: #244c42; font-size: 19px; }
 .admin-header .dropdown-menu { max-width: calc(100vw - 32px); }
 .admin-header .dropdown-toggle { text-decoration: none; }
+.admin-live-notifications, .staff-live-notifications {
+  position: fixed; top: 16px; right: 16px; z-index: 2000;
+  display: grid; gap: 10px; width: min(380px, calc(100vw - 32px));
+  max-height: calc(100vh - 32px); overflow-y: auto; pointer-events: none;
+}
+.admin-live-notification, .staff-live-notification {
+  padding: 14px 16px; border: 1px solid #dfe5e2; border-left: 4px solid #28594e;
+  border-radius: 7px; background: #fff; box-shadow: 0 8px 28px rgb(25 45 35 / 18%);
+  pointer-events: auto;
+}
+.admin-live-notification header, .staff-live-notification header {
+  display: flex; align-items: flex-start; justify-content: space-between; gap: 12px;
+  color: #244c42;
+}
+.admin-live-notification header button, .staff-live-notification header button {
+  flex: 0 0 auto; border: 0; background: transparent; color: #526058;
+  font-size: 24px; line-height: 1; cursor: pointer;
+}
+.admin-live-notification p, .staff-live-notification p { margin: 8px 0 5px; color: #36443b; overflow-wrap: anywhere; }
+.admin-live-notification small, .staff-live-notification small { color: #718075; }
 .admin-body { display: flex; align-items: stretch; min-height: calc(100vh - 72px); }
 .admin-sidebar {
   flex: 0 0 208px;

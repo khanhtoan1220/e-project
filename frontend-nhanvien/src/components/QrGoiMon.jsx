@@ -36,8 +36,14 @@ export default function QrGoiMon({ banId, tenBan }) {
   };
 
   return <>
-    <Button size="sm" variant="outline-dark" onClick={() => setShow(true)}>
-      Mã QR cố định
+    <Button
+      variant="light"
+      className="table-qr-preview"
+      title={`Phóng to mã QR bàn ${tenBan}`}
+      aria-label={`Phóng to mã QR bàn ${tenBan}`}
+      onClick={() => setShow(true)}
+    >
+      {image ? <img src={image} alt="" /> : <span>QR</span>}
     </Button>
     <Modal show={show} onHide={() => setShow(false)} centered>
       <Modal.Header closeButton>
@@ -45,7 +51,7 @@ export default function QrGoiMon({ banId, tenBan }) {
       </Modal.Header>
       <Modal.Body className="text-center">
         {error && <Alert variant="danger">{error}</Alert>}
-        {image && <img src={image} alt={"Mã QR cố định bàn " + tenBan} className="img-fluid" />}
+        {image && <img src={image} alt={"Mã QR cố định bàn " + tenBan} className="img-fluid table-qr-expanded" />}
         <p className="small text-secondary">Mã này luôn mở trang gọi món của bàn {tenBan}.</p>
         <div className="small text-break mb-3">{accessUrl}</div>
         <a
