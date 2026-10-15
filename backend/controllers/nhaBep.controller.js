@@ -9,8 +9,6 @@ exports.getMonCho = async (req, res) => {
     const monCho = [];
     dsHoaDon.forEach((hd) => {
       hd.danhSachMon.forEach((mon) => {
-        // Bếp chỉ được xem các món đã duyệt (trạng thái choCheBien hoặc dangLam)
-        // Ẩn hoàn toàn các món mới do khách quét QR tự đặt đang ở trạng thái choXacNhan
         if (
           mon.trangThaiMon === "choCheBien" ||
           mon.trangThaiMon === "dangLam"
@@ -59,7 +57,6 @@ exports.updateTrangThaiMon = async (req, res) => {
       }
     }
 
-    // Tự động tính toán lại tổng tiền hóa đơn, loại bỏ các món đã bị hủy
     hoaDon.tongTien = hoaDon.danhSachMon.reduce((sum, mon) => {
       if (mon.trangThaiMon === "daHuy") return sum;
       return sum + mon.gia * mon.soLuong;

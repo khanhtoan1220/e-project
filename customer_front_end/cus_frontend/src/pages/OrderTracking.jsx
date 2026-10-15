@@ -17,6 +17,7 @@ function OrderTracking({ ban, hoaDon, danhSachYeuCauTraMon = [], danhSachYeuCauT
   const [dangGuiId, setDangGuiId] = useState("");
   const danhSachMon = hoaDon?.danhSachMon || [];
   const tongTien = Number(hoaDon?.tongTien || 0);
+  const soTienChot = Number(hoaDon?.soTienThanhToan ?? 0);
   const [cauHinhThanhToan, setCauHinhThanhToan] = useState(null);
   useEffect(() => {
     api.get("/khach-hang/cau-hinh-thanh-toan")
@@ -27,10 +28,11 @@ function OrderTracking({ ban, hoaDon, danhSachYeuCauTraMon = [], danhSachYeuCauT
   const soTaiKhoan = cauHinhThanhToan?.soTaiKhoan;
   const tenChuTaiKhoan = cauHinhThanhToan?.tenChuTaiKhoan;
   const noiDungChuyenKhoan = hoaDon?._id ? `HD${String(hoaDon._id).slice(-8).toUpperCase()}` : "";
-  const qrThanhToan = maNganHang && soTaiKhoan && tenChuTaiKhoan && tongTien > 0
-    ? `https://img.vietqr.io/image/${encodeURIComponent(maNganHang)}-${encodeURIComponent(soTaiKhoan)}-compact2.png?amount=${encodeURIComponent(tongTien)}&addInfo=${encodeURIComponent(noiDungChuyenKhoan)}&accountName=${encodeURIComponent(tenChuTaiKhoan)}`
+  const qrThanhToan = hoaDon?.trangThaiThanhToan === "choThanhToan" && maNganHang && soTaiKhoan && tenChuTaiKhoan && soTienChot > 0
+    ? `https://img.vietqr.io/image/${encodeURIComponent(maNganHang)}-${encodeURIComponent(soTaiKhoan)}-compact2.png?amount=${encodeURIComponent(soTienChot)}&addInfo=${encodeURIComponent(noiDungChuyenKhoan)}&accountName=${encodeURIComponent(tenChuTaiKhoan)}`
     : "";
-  const yeuCauThanhToanDangCho = danhSachYeuCauThanhToan.some((yeuCau) => yeuCau.trangThai === "choXuLy");
+  const yeuCauThanhToanDangCho = danhSachYeuCauThanhToan.some((yeuCau) => ["choXuLy", "dangXuLy"].includes(yeuCau.trangThai));
+  const daChotThanhToan = hoaDon?.trangThaiThanhToan === "choThanhToan";
   const conMonChuaHoanThanh = danhSachMon.some((mon) => !["daXong", "daPhucVu", "daHuy", "daTra"].includes(mon.trangThaiMon));
 
   const guiYeuCauTra = async (mon) => {
@@ -107,12 +109,12 @@ function OrderTracking({ ban, hoaDon, danhSachYeuCauTraMon = [], danhSachYeuCauT
       </section>
 
         <footer className="receipt-total"><span>Tổng cộng · tạm tính</span><strong>{tongTien.toLocaleString("vi-VN")} đ</strong></footer>
-        {hoaDon?._id && <section className="invoice-payment-qr" aria-label="Mã QR thanh toán">
-          <h4>Quét mã QR để chuyển khoản</h4>
+        {hoaDon?._id && daChotThanhToan && <section className="invoice-payment-qr" aria-label="Mã QR thanh toán">
+          <h4>Hóa đơn đã chốt · quét mã để chuyển khoản</h4>
           {qrThanhToan ? <>
-            <img src={qrThanhToan} alt={`Mã QR chuyển ${tongTien.toLocaleString("vi-VN")} đồng`} />
-            <p>Ngân hàng sẽ điền sẵn số tiền <strong>{tongTien.toLocaleString("vi-VN")} đ</strong> và nội dung <strong>{noiDungChuyenKhoan}</strong>.</p>
-          </> : <p>Chưa có số tiền cần thanh toán để tạo QR.</p>}
+            <img src={qrThanhToan} alt={`Mã QR chuyển ${soTienChot.toLocaleString("vi-VN")} đồng`} />
+            <p>Đã chốt <strong>{soTienChot.toLocaleString("vi-VN")} đ</strong> · Nội dung <strong>{noiDungChuyenKhoan}</strong>. Sau khi chuyển khoản, vui lòng báo nhân viên xác nhận.</p>
+          </> : <p>Không tạo được mã QR. Vui lòng báo nhân viên.</p>}
         </section>}
       </section>
 
@@ -124,8 +126,10 @@ function OrderTracking({ ban, hoaDon, danhSachYeuCauTraMon = [], danhSachYeuCauT
       </section>}
 
       {ban?.trangThai === "dangSuDung" && hoaDon?._id && <section className="payment-request-card">
-        {yeuCauThanhToanDangCho ? (
-          <p>Đã gửi yêu cầu thanh toán. Nhân viên sẽ kiểm tra hóa đơn và xác nhận đã nhận tiền.</p>
+        {daChotThanhToan ? (
+          <p>Nhân viên đã chốt hóa đơn {soTienChot.toLocaleString("vi-VN")} đ. Quét mã QR ở trên để chuyển khoản, sau đó báo nhân viên xác nhận.</p>
+        ) : yeuCauThanhToanDangCho ? (
+          <p>Đã gửi yêu cầu thanh toán. Nhân viên sẽ kiểm tra và chốt hóa đơn; mã QR sẽ xuất hiện sau khi chốt.</p>
         ) : <>
           <p>Kiểm tra tổng tiền rồi yêu cầu nhân viên thanh toán tại bàn.</p>
           <button type="button" className="primary-button" disabled={loading || conMonChuaHoanThanh}
@@ -134,7 +138,9 @@ function OrderTracking({ ban, hoaDon, danhSachYeuCauTraMon = [], danhSachYeuCauT
         </>}
       </section>}
 
-      <button type="button" className="primary-button" onClick={onOrderMore}>Gọi thêm món</button>
+      <button type="button" className="primary-button" disabled={daChotThanhToan} onClick={onOrderMore}>
+        {daChotThanhToan ? "Hóa đơn đã chốt" : "Gọi thêm món"}
+      </button>
     </main>
   );
 }

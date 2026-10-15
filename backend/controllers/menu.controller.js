@@ -103,7 +103,7 @@ exports.updateStatus = async (req, res) => {
     const p = await Menu.findByIdAndUpdate(
       req.params.id,
       { conBan: conBan },
-      { new: true },
+      { returnDocument: "after" },
     );
     res.json(p);
   } catch (error) {
@@ -113,7 +113,7 @@ exports.updateStatus = async (req, res) => {
 exports.update = async (req, res) => {
   try {
     const p = await Menu.findByIdAndUpdate(req.params.id, req.body, {
-      new: true,
+      returnDocument: "after",
       runValidators: true,
     });
     if (p) res.json(p);

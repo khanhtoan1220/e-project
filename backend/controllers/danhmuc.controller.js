@@ -24,7 +24,7 @@ exports.update = async (req, res) => {
     const id = req.params.id;
     const data = req.body;
     const p = await Danhmuc.findByIdAndUpdate(id, data, {
-      new: true,
+      returnDocument: "after",
       runValidators: true,
     });
     if (p) {

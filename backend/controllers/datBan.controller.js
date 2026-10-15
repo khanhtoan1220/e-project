@@ -75,7 +75,7 @@ exports.updateStatus = async (req, res) => {
     const p = await DatBan.findByIdAndUpdate(
       req.params.id,
       { trangThai: req.body.trangThai },
-      { new: true },
+      { returnDocument: "after" },
     );
     if (p) res.json(p);
     else res.status(404).json({ message: "Không tìm thấy phiếu đặt" });

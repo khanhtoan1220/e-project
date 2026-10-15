@@ -99,7 +99,7 @@ exports.guiYeuCauThanhToan = async (req, res) => {
     const daCoYeuCau = await HoTro.findOne({
       hoaDonId: hoaDon._id,
       loaiYeuCau: "thanhToan",
-      trangThai: "choXuLy",
+      trangThai: { $in: ["choXuLy", "dangXuLy"] },
     }).exec();
     if (daCoYeuCau) {
       return res.json({ message: "Yêu cầu thanh toán của bàn đang chờ nhân viên xác nhận.", data: daCoYeuCau });
@@ -112,6 +112,9 @@ exports.guiYeuCauThanhToan = async (req, res) => {
       noiDung: "Khách yêu cầu thanh toán hóa đơn.",
       trangThai: "choXuLy",
     });
+    hoaDon.trangThaiThanhToan = "choChot";
+    hoaDon.soTienThanhToan = undefined;
+    await hoaDon.save();
     pusher.trigger("nhan-vien-channel", "yeu-cau-moi", {
       message: `Bàn [${hoaDon.banId.ten}] yêu cầu thanh toán hóa đơn.`,
       banId: hoaDon.banId._id,
@@ -125,9 +128,9 @@ exports.guiYeuCauThanhToan = async (req, res) => {
 
 exports.getDanhSachCho = async (req, res) => {
   try {
-    const list = await HoTro.find({ trangThai: "choXuLy" })
+    const list = await HoTro.find({ trangThai: { $in: ["choXuLy", "dangXuLy"] } })
       .populate("banId")
-      .populate("hoaDonId", "trangThai danhSachMon tongTien")
+      .populate("hoaDonId", "trangThai danhSachMon tongTien trangThaiThanhToan soTienThanhToan")
       .sort({ createdAt: 1 })
       .exec();
     res.json(list);
@@ -140,11 +143,13 @@ exports.hoanTatYeuCau = async (req, res) => {
   try {
     const yeuCau = await HoTro.findById(req.params.id);
     if (!yeuCau) return res.status(404).json({ message: "Không tìm thấy yêu cầu để xử lý" });
-    if (yeuCau.trangThai !== "choXuLy") {
+    const { ketQua } = req.body || {};
+    if (yeuCau.loaiYeuCau !== "thanhToan" && yeuCau.trangThai !== "choXuLy") {
       return res.status(409).json({ message: "Yêu cầu này đã được xử lý." });
     }
-
-    const { ketQua } = req.body || {};
+    if (yeuCau.loaiYeuCau === "thanhToan" && !["choXuLy", "dangXuLy"].includes(yeuCau.trangThai)) {
+      return res.status(409).json({ message: "Yêu cầu thanh toán này đã được xử lý." });
+    }
     if (yeuCau.loaiYeuCau === "traMon") {
       if (!["chapNhan", "tuChoi"].includes(ketQua)) {
         return res.status(400).json({ message: "Vui lòng chọn chấp nhận hoặc từ chối trả món." });
@@ -168,12 +173,44 @@ exports.hoanTatYeuCau = async (req, res) => {
     }
 
     if (yeuCau.loaiYeuCau === "thanhToan") {
-      if (!["chapNhan", "tuChoi"].includes(ketQua)) {
-        return res.status(400).json({ message: "Vui lòng xác nhận đã thu tiền hoặc đóng yêu cầu." });
-      }
-      if (ketQua === "chapNhan") {
+      if (ketQua === "chotDon") {
+        if (yeuCau.trangThai !== "choXuLy") {
+          return res.status(409).json({ message: "Yêu cầu thanh toán đã được chốt hoặc xử lý." });
+        }
         const hoaDon = await HoaDon.findById(yeuCau.hoaDonId);
         if (!hoaDon || hoaDon.trangThai !== "chuaThanhToan") {
+          return res.status(409).json({ message: "Hóa đơn đã kết thúc hoặc không còn cần thanh toán." });
+        }
+        const conMonChuaHoanThanh = hoaDon.danhSachMon.some(
+          (mon) => !["daXong", "daPhucVu", "daHuy", "daTra"].includes(mon.trangThaiMon),
+        );
+        if (conMonChuaHoanThanh) {
+          return res.status(400).json({ message: "Vẫn còn món đang chờ xác nhận hoặc chế biến." });
+        }
+        hoaDon.tongTien = hoaDon.danhSachMon.reduce((tong, mon) => {
+          if (["daHuy", "daTra"].includes(mon.trangThaiMon)) return tong;
+          return tong + mon.gia * mon.soLuong;
+        }, 0);
+        if (hoaDon.tongTien <= 0) {
+          return res.status(400).json({ message: "Hóa đơn không có số tiền cần thu." });
+        }
+        hoaDon.soTienThanhToan = hoaDon.tongTien;
+        hoaDon.trangThaiThanhToan = "choThanhToan";
+        await hoaDon.save();
+        yeuCau.trangThai = "dangXuLy";
+        await yeuCau.save();
+        return res.json({ message: "Đã chốt hóa đơn. Mã QR thanh toán đã được tạo.", data: yeuCau, hoaDon });
+      }
+
+      if (!["chapNhan", "tuChoi"].includes(ketQua)) {
+        return res.status(400).json({ message: "Vui lòng chốt hóa đơn, xác nhận đã nhận tiền hoặc đóng yêu cầu." });
+      }
+      if (ketQua === "chapNhan") {
+        if (yeuCau.trangThai !== "dangXuLy") {
+          return res.status(409).json({ message: "Cần chốt hóa đơn và gửi mã QR trước khi xác nhận thanh toán." });
+        }
+        const hoaDon = await HoaDon.findById(yeuCau.hoaDonId);
+        if (!hoaDon || hoaDon.trangThai !== "chuaThanhToan" || hoaDon.trangThaiThanhToan !== "choThanhToan") {
           return res.status(409).json({ message: "Hóa đơn đã kết thúc hoặc không còn cần thanh toán." });
         }
         const conMonChuaHoanThanh = hoaDon.danhSachMon.some(
@@ -188,19 +225,26 @@ exports.hoanTatYeuCau = async (req, res) => {
             trangThai: "chuaThanhToan",
             danhSachMon: { $not: { $elemMatch: { trangThaiMon: { $nin: ["daXong", "daPhucVu", "daHuy", "daTra"] } } } },
           },
-          { trangThai: "daThanhToan", thoiGianRa: new Date() },
-          { new: true },
+          { trangThai: "daThanhToan", trangThaiThanhToan: "daThanhToan", thoiGianRa: new Date() },
+          { returnDocument: "after" },
         );
         if (!daThanhToan) return res.status(409).json({ message: "Hóa đơn vừa thay đổi, vui lòng tải lại." });
         await BanAn.findOneAndUpdate(
           { _id: daThanhToan.banId, hoaDon: daThanhToan._id },
           { trangThai: "trong", hoaDon: null },
         );
+      } else {
+        const hoaDon = await HoaDon.findById(yeuCau.hoaDonId);
+        if (hoaDon && hoaDon.trangThai === "chuaThanhToan") {
+          hoaDon.trangThaiThanhToan = "chuaYeuCau";
+          hoaDon.soTienThanhToan = undefined;
+          await hoaDon.save();
+        }
       }
       yeuCau.ketQuaXuLy = ketQua;
     }
 
-    yeuCau.trangThai = "hoanTat";
+    yeuCau.trangThai = yeuCau.loaiYeuCau === "thanhToan" && ketQua === "chotDon" ? "dangXuLy" : "hoanTat";
     await yeuCau.save();
     res.json({ message: ketQua === "chapNhan" ? "Đã chấp nhận trả món và cập nhật hóa đơn." : "Đã xử lý xong yêu cầu.", data: yeuCau });
   } catch (error) {

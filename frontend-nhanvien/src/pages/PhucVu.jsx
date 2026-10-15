@@ -46,41 +46,74 @@ export default function PhucVu({ soDoBanVersion = 0, refreshSoDoBan }) {
   const [khuVucLoc, setKhuVucLoc] = useState("");
   const [trangThaiLoc, setTrangThaiLoc] = useState("");
   const tenTrangThaiMon = {
-    choXacNhan: "Chờ xác nhận", choCheBien: "Chờ chế biến", dangLam: "Đang làm",
-    daXong: "Đã hoàn thành", daPhucVu: "Đã hoàn thành", daHuy: "Đã hủy", daTra: "Đã trả",
+    choXacNhan: "Chờ xác nhận",
+    choCheBien: "Chờ chế biến",
+    dangLam: "Đang làm",
+    daXong: "Đã hoàn thành",
+    daPhucVu: "Đã hoàn thành",
+    daHuy: "Đã hủy",
+    daTra: "Đã trả",
   };
   const [cart, setCart] = useState([]);
   const [ghiChuMon, setGhiChuMon] = useState({});
   const tongTienHoaDon = Number(activeHoaDon?.tongTien || 0);
+  const soTienThanhToan = Number(activeHoaDon?.soTienThanhToan ?? 0);
   const maNganHangQr = cauHinhThanhToan?.maNganHang;
   const soTaiKhoanQr = cauHinhThanhToan?.soTaiKhoan;
   const tenChuTaiKhoanQr = cauHinhThanhToan?.tenChuTaiKhoan;
-  const noiDungQr = activeHoaDon?._id ? `HD${String(activeHoaDon._id).slice(-8).toUpperCase()}` : "";
-  const qrThanhToan = tongTienHoaDon > 0
-    ? `https://img.vietqr.io/image/MB-0352983780-compact2.png?amount=${encodeURIComponent(tongTienHoaDon)}&addInfo=${encodeURIComponent(noiDungQr)}&accountName=NGUYEN%20KHANH%20TOAN`
+  const noiDungQr = activeHoaDon?._id
+    ? `HD${String(activeHoaDon._id).slice(-8).toUpperCase()}`
     : "";
-  const monHienThi = monAnList.filter(mon =>
-    (!selectedDanhMuc || (mon.danhMucId?._id || mon.danhMucId) === selectedDanhMuc) &&
-    mon.ten.toLocaleLowerCase("vi-VN").includes(timMon.trim().toLocaleLowerCase("vi-VN"))
+  const qrThanhToan =
+    activeHoaDon?.trangThaiThanhToan === "choThanhToan" &&
+    maNganHangQr &&
+    soTaiKhoanQr &&
+    tenChuTaiKhoanQr &&
+    soTienThanhToan > 0
+      ? `https://img.vietqr.io/image/${encodeURIComponent(maNganHangQr)}-${encodeURIComponent(soTaiKhoanQr)}-compact2.png?amount=${encodeURIComponent(soTienThanhToan)}&addInfo=${encodeURIComponent(noiDungQr)}&accountName=${encodeURIComponent(tenChuTaiKhoanQr)}`
+      : "";
+  const monHienThi = monAnList.filter(
+    (mon) =>
+      (!selectedDanhMuc ||
+        (mon.danhMucId?._id || mon.danhMucId) === selectedDanhMuc) &&
+      mon.ten
+        .toLocaleLowerCase("vi-VN")
+        .includes(timMon.trim().toLocaleLowerCase("vi-VN")),
   );
-  const tongMonMoi = cart.reduce((sum, item) => sum + item.gia * item.soLuong, 0);
-  const banHienThi = banList.filter(ban =>
-    (!khuVucLoc || ban.khuVuc === khuVucLoc) &&
-    (!trangThaiLoc || ban.trangThai === trangThaiLoc)
+  const tongMonMoi = cart.reduce(
+    (sum, item) => sum + item.gia * item.soLuong,
+    0,
+  );
+  const banHienThi = banList.filter(
+    (ban) =>
+      (!khuVucLoc || ban.khuVuc === khuVucLoc) &&
+      (!trangThaiLoc || ban.trangThai === trangThaiLoc),
   );
   const layUrlAnh = (url) => {
-    try { return new URL(url, ENV.api_url).href; } catch { return ""; }
+    try {
+      return new URL(url, ENV.api_url).href;
+    } catch {
+      return "";
+    }
   };
   const handleDongGoiMon = () => {
     if (dangGuiMon) return;
-    if (cart.length && !window.confirm("Món đang chọn chưa gửi. Bạn muốn đóng và bỏ các món này?")) return;
+    if (
+      cart.length &&
+      !window.confirm(
+        "Món đang chọn chưa gửi. Bạn muốn đóng và bỏ các món này?",
+      )
+    )
+      return;
     setShowOrderModal(false);
   };
   const handleTaiHoaDon = async () => {
     try {
       setError("");
       setActiveHoaDon(await get_hoadon_ban_service(activeBan._id));
-    } catch (err) { setError(err.toString()); }
+    } catch (err) {
+      setError(err.toString());
+    }
   };
 
   // State phục vụ chuyển bàn
@@ -102,14 +135,15 @@ export default function PhucVu({ soDoBanVersion = 0, refreshSoDoBan }) {
 
   useEffect(() => {
     loadSodoBan();
-    get_cau_hinh_thanh_toan_service().then(setCauHinhThanhToan).catch(() => setCauHinhThanhToan(null));
+    get_cau_hinh_thanh_toan_service()
+      .then(setCauHinhThanhToan)
+      .catch(() => setCauHinhThanhToan(null));
   }, []);
 
   useEffect(() => {
     if (soDoBanVersion > 0) loadSodoBan();
   }, [soDoBanVersion]);
 
-  // Click vào bàn để xử lý gọi món / xem hóa đơn
   const handleOpenOrderModal = async (ban, tabMoDau = "orderMoi") => {
     try {
       setError("");
@@ -121,15 +155,12 @@ export default function PhucVu({ soDoBanVersion = 0, refreshSoDoBan }) {
       setCart([]);
       setGhiChuMon({});
 
-      // 1. Tải hóa đơn hiện tại của bàn
       const hoaDon = await get_hoadon_ban_service(ban._id);
       setActiveHoaDon(hoaDon);
 
-      // 2. Tải danh mục thực đơn
       const dmData = await get_danhmuc_menu_service();
       setDanhMucList(dmData);
 
-      // Tải tất cả món ăn trước
       const maData = await get_monan_menu_service();
       setMonAnList(maData);
 
@@ -143,7 +174,6 @@ export default function PhucVu({ soDoBanVersion = 0, refreshSoDoBan }) {
     setSelectedDanhMuc(dmId);
   };
 
-  // Quản lý giỏ hàng tạm thời
   const addToCart = (mon) => {
     if (dangGuiMon) return;
     const exist = cart.find((item) => item.menuId === mon._id);
@@ -166,7 +196,10 @@ export default function PhucVu({ soDoBanVersion = 0, refreshSoDoBan }) {
 
   const changeQty = (menuId, delta) => {
     if (dangGuiMon) return;
-    if (cart.find(item => item.menuId === menuId)?.soLuong === 1 && delta < 0) {
+    if (
+      cart.find((item) => item.menuId === menuId)?.soLuong === 1 &&
+      delta < 0
+    ) {
       setGhiChuMon({ ...ghiChuMon, [menuId]: "" });
     }
     setCart(
@@ -230,7 +263,9 @@ export default function PhucVu({ soDoBanVersion = 0, refreshSoDoBan }) {
       setError("");
       setMsg("");
       await thanh_toan_service(activeHoaDon._id);
-      setMsg(`Thanh toán thành công cho [${activeBan.ten}]; bàn đã chuyển về trạng thái trống.`);
+      setMsg(
+        `Thanh toán thành công cho [${activeBan.ten}]; bàn đã chuyển về trạng thái trống.`,
+      );
       setShowOrderModal(false);
       loadSodoBan();
     } catch (err) {
@@ -262,15 +297,12 @@ export default function PhucVu({ soDoBanVersion = 0, refreshSoDoBan }) {
     }
   };
 
-  // Phục vụ duyệt các món khách tự gọi qua QR để báo Bếp nấu
   const handleDuyetMon = async () => {
     try {
       setError("");
       await duyet_mon_service(activeHoaDon._id);
-      setMsg(
-        "Đã duyệt các món ăn khách tự đặt và gửi xuống bếp chế biến!",
-      );
-      // Đồng bộ lại hóa đơn
+      setMsg("Đã duyệt các món ăn khách tự đặt và gửi xuống bếp chế biến!");
+
       const updatedHoaDon = await get_hoadon_ban_service(activeBan._id);
       setActiveHoaDon(updatedHoaDon);
     } catch (err) {
@@ -295,7 +327,11 @@ export default function PhucVu({ soDoBanVersion = 0, refreshSoDoBan }) {
     if (!activeBan?._id || !soDoBanVersion) return;
     const banMoi = banList.find((ban) => ban._id === activeBan._id);
     if (!banMoi || banMoi.trangThai !== "dangSuDung") return;
-    if (String(banMoi.hoaDon?._id || banMoi.hoaDon || "") !== String(activeHoaDon?._id || "")) return;
+    if (
+      String(banMoi.hoaDon?._id || banMoi.hoaDon || "") !==
+      String(activeHoaDon?._id || "")
+    )
+      return;
     get_hoadon_ban_service(activeBan._id)
       .then(setActiveHoaDon)
       .catch(() => {});
@@ -367,17 +403,31 @@ export default function PhucVu({ soDoBanVersion = 0, refreshSoDoBan }) {
       )}
 
       <div className="table-filters">
-        <Form.Select aria-label="Lọc khu vực" value={khuVucLoc} onChange={e => setKhuVucLoc(e.target.value)}>
+        <Form.Select
+          aria-label="Lọc khu vực"
+          value={khuVucLoc}
+          onChange={(e) => setKhuVucLoc(e.target.value)}
+        >
           <option value="">Tất cả khu vực</option>
-          <option value="tang1">Tầng 1</option><option value="tang2">Tầng 2</option><option value="tang3">Tầng 3</option>
+          <option value="tang1">Tầng 1</option>
+          <option value="tang2">Tầng 2</option>
+          <option value="tang3">Tầng 3</option>
         </Form.Select>
-        <Form.Select aria-label="Lọc trạng thái bàn" value={trangThaiLoc} onChange={e => setTrangThaiLoc(e.target.value)}>
-          <option value="">Tất cả trạng thái</option><option value="trong">Sẵn sàng</option>
-          <option value="dangSuDung">Đang phục vụ</option><option value="datTruoc">Đặt trước</option>
+        <Form.Select
+          aria-label="Lọc trạng thái bàn"
+          value={trangThaiLoc}
+          onChange={(e) => setTrangThaiLoc(e.target.value)}
+        >
+          <option value="">Tất cả trạng thái</option>
+          <option value="trong">Sẵn sàng</option>
+          <option value="dangSuDung">Đang phục vụ</option>
+          <option value="datTruoc">Đặt trước</option>
         </Form.Select>
         <span className="text-secondary small">{banHienThi.length} bàn</span>
       </div>
-      {!loading && banHienThi.length === 0 && <div className="empty-state">Không có bàn phù hợp.</div>}
+      {!loading && banHienThi.length === 0 && (
+        <div className="empty-state">Không có bàn phù hợp.</div>
+      )}
 
       {loading ? (
         <div className="text-center py-5">
@@ -457,195 +507,496 @@ export default function PhucVu({ soDoBanVersion = 0, refreshSoDoBan }) {
         </Row>
       )}
 
-      {/* Gọi món cho bàn đang phục vụ */}
-      <Modal show={showOrderModal} onHide={handleDongGoiMon}
-        size="xl" fullscreen="lg-down" backdrop="static" className="order-modal">
-        {activeBan && activeHoaDon && <>
-          <Modal.Header closeButton={!dangGuiMon}>
-            <div>
-              <Modal.Title>{tabHoaDon === "daGoi" ? "Thanh toán · " : "Thực đơn · "}{activeBan.ten}</Modal.Title>
-              <div className="text-secondary small mt-1">
-                {activeBan.khuVuc === "tang1" ? "Tầng 1" : activeBan.khuVuc === "tang2" ? "Tầng 2" : "Tầng 3"}
-                {tabHoaDon === "daGoi" ? " · Kiểm tra hóa đơn và mã QR thanh toán" : " · Chọn món và kiểm tra trước khi gửi"}
-              </div>
-            </div>
-          </Modal.Header>
-          {error && <Alert variant="danger" className="m-3 mb-0">{error}</Alert>}
-          {msg && <Alert variant="success" className="m-3 mb-0">{msg}</Alert>}
-          <Modal.Body className={`order-body ${tabHoaDon === "daGoi" ? "payment-view" : ""}`}>
-            {tabHoaDon !== "daGoi" && <section className="menu-panel" aria-label="Thực đơn">
-              <div className="menu-tools">
-                <Form.Control type="search" placeholder="Tìm tên món ăn..."
-                  aria-label="Tìm món ăn" value={timMon}
-                  onChange={(e) => setTimMon(e.target.value)} />
-                <div className="category-list" aria-label="Danh mục món">
-                  <Button variant={!selectedDanhMuc ? "dark" : "outline-secondary"}
-                    aria-pressed={!selectedDanhMuc} onClick={() => handleDanhMucSelect("")}>Tất cả</Button>
-                  {danhMucList.map(dm => <Button key={dm._id}
-                    variant={selectedDanhMuc === dm._id ? "dark" : "outline-secondary"}
-                    aria-pressed={selectedDanhMuc === dm._id}
-                    onClick={() => handleDanhMucSelect(dm._id)}>{dm.ten}</Button>)}
+      <Modal
+        show={showOrderModal}
+        onHide={handleDongGoiMon}
+        size="xl"
+        fullscreen="lg-down"
+        backdrop="static"
+        className="order-modal"
+      >
+        {activeBan && activeHoaDon && (
+          <>
+            <Modal.Header closeButton={!dangGuiMon}>
+              <div>
+                <Modal.Title>
+                  {tabHoaDon === "daGoi" ? "Thanh toán · " : "Thực đơn · "}
+                  {activeBan.ten}
+                </Modal.Title>
+                <div className="text-secondary small mt-1">
+                  {activeBan.khuVuc === "tang1"
+                    ? "Tầng 1"
+                    : activeBan.khuVuc === "tang2"
+                      ? "Tầng 2"
+                      : "Tầng 3"}
+                  {tabHoaDon === "daGoi"
+                    ? " · Kiểm tra hóa đơn và mã QR thanh toán"
+                    : " · Chọn món và kiểm tra trước khi gửi"}
                 </div>
-                <div className="small text-secondary">{monHienThi.length} món trong thực đơn</div>
-                <Button variant="outline-dark" className="mobile-cart-link"
-                  onClick={() => document.getElementById("staff-bill-panel")?.scrollIntoView({ behavior: "smooth" })}>
-                  Xem món đang chọn ({cart.reduce((sum, item) => sum + item.soLuong, 0)})
-                </Button>
               </div>
-              <div className="menu-grid">
-                {monHienThi.map(mon => {
-                  const daChon = cart.find(item => item.menuId === mon._id)?.soLuong || 0;
-                  return <article key={mon._id} className={"menu-card" + (daChon ? " selected" : "")}>
-                    <div className="dish-image">
-                      <span>Chưa có ảnh</span>
-                      {mon.hinhAnh && <img src={layUrlAnh(mon.hinhAnh)} alt={mon.ten} loading="lazy"
-                        onError={e => { e.currentTarget.style.display = "none"; }} />}
-                      {daChon > 0 && <span className="dish-count">Đã chọn {daChon}</span>}
+            </Modal.Header>
+            {error && (
+              <Alert variant="danger" className="m-3 mb-0">
+                {error}
+              </Alert>
+            )}
+            {msg && (
+              <Alert variant="success" className="m-3 mb-0">
+                {msg}
+              </Alert>
+            )}
+            <Modal.Body
+              className={`order-body ${tabHoaDon === "daGoi" ? "payment-view" : ""}`}
+            >
+              {tabHoaDon !== "daGoi" && (
+                <section className="menu-panel" aria-label="Thực đơn">
+                  <div className="menu-tools">
+                    <Form.Control
+                      type="search"
+                      placeholder="Tìm tên món ăn..."
+                      aria-label="Tìm món ăn"
+                      value={timMon}
+                      onChange={(e) => setTimMon(e.target.value)}
+                    />
+                    <div className="category-list" aria-label="Danh mục món">
+                      <Button
+                        variant={
+                          !selectedDanhMuc ? "dark" : "outline-secondary"
+                        }
+                        aria-pressed={!selectedDanhMuc}
+                        onClick={() => handleDanhMucSelect("")}
+                      >
+                        Tất cả
+                      </Button>
+                      {danhMucList.map((dm) => (
+                        <Button
+                          key={dm._id}
+                          variant={
+                            selectedDanhMuc === dm._id
+                              ? "dark"
+                              : "outline-secondary"
+                          }
+                          aria-pressed={selectedDanhMuc === dm._id}
+                          onClick={() => handleDanhMucSelect(dm._id)}
+                        >
+                          {dm.ten}
+                        </Button>
+                      ))}
                     </div>
-                    <div className="dish-content">
-                      <div className="dish-category">
-                        {mon.danhMucId?.ten || danhMucList.find(dm => dm._id === mon.danhMucId)?.ten || "Món ăn"}
-                      </div>
-                      <h3>{mon.ten}</h3>
-                      <div className="dish-bottom">
-                        <strong>{Number(mon.gia).toLocaleString("vi-VN")} đ</strong>
-                        <Button variant="outline-dark" size="sm"
-                          disabled={dangGuiMon || daChon >= 100}
-                          aria-label={"Thêm " + mon.ten} onClick={() => addToCart(mon)}>Thêm món</Button>
-                      </div>
+                    <div className="small text-secondary">
+                      {monHienThi.length} món trong thực đơn
                     </div>
-                  </article>;
-                })}
-              </div>
-              {monHienThi.length === 0 && <div className="empty-state">
-                <h3>Không tìm thấy món</h3><p>Thử tên khác hoặc chọn lại danh mục.</p>
-              </div>}
-            </section>}
-            <section id="staff-bill-panel" className="bill-panel" aria-label="Món của bàn">
-              <Tabs activeKey={tabHoaDon} onSelect={(key) => key && setTabHoaDon(key)} className="bill-tabs">
-                <Tab eventKey="orderMoi" title={"Đang chọn (" + cart.reduce((sum, item) => sum + item.soLuong, 0) + ")"}>
-                  <div className="bill-items">
-                    {cart.length === 0 ? <div className="empty-state">
-                      <h3>Chưa chọn món</h3><p>Bấm “Thêm món” trong thực đơn để gọi cho khách.</p>
-                    </div> : cart.map(item => <div className="cart-item" key={item.menuId}>
-                      <div className="d-flex justify-content-between gap-3">
-                        <strong>{item.ten}</strong>
-                        <Button variant="link" className="text-danger p-0" disabled={dangGuiMon}
-                          aria-label={"Bỏ " + item.ten} onClick={() => {
-                            setCart(cart.filter(mon => mon.menuId !== item.menuId));
-                            setGhiChuMon({ ...ghiChuMon, [item.menuId]: "" });
-                          }}>Bỏ</Button>
-                      </div>
-                      <div className="cart-item-price">
-                        <span>{Number(item.gia).toLocaleString("vi-VN")} đ / phần</span>
-                        <div className="quantity-control">
-                          <Button variant="outline-secondary" disabled={dangGuiMon}
-                            aria-label={"Giảm số lượng " + item.ten} onClick={() => changeQty(item.menuId, -1)}>−</Button>
-                          <span aria-label="Số lượng">{item.soLuong}</span>
-                          <Button variant="outline-secondary" disabled={dangGuiMon || item.soLuong >= 100}
-                            aria-label={"Tăng số lượng " + item.ten} onClick={() => changeQty(item.menuId, 1)}>+</Button>
-                        </div>
-                      </div>
-                      <Form.Control aria-label={"Ghi chú cho " + item.ten}
-                        placeholder="Ghi chú: ít cay, không hành..."
-                        maxLength={500} disabled={dangGuiMon}
-                        value={ghiChuMon[item.menuId] || ""}
-                        onChange={e => handleGhiChuChange(item.menuId, e.target.value)} />
-                      <div className="text-end small mt-2">{Number(item.gia * item.soLuong).toLocaleString("vi-VN")} đ</div>
-                    </div>)}
-                  </div>
-                  <div className="bill-summary">
-                    <div className="d-flex justify-content-between mb-3">
-                      <span>Tạm tính món mới</span><strong>{tongMonMoi.toLocaleString("vi-VN")} đ</strong>
-                    </div>
-                    <Button variant="dark" className="w-100" disabled={!cart.length || dangGuiMon} onClick={handleGoiMon}>
-                      {dangGuiMon ? "Đang gửi món..." : "Gửi món"}
+                    <Button
+                      variant="outline-dark"
+                      className="mobile-cart-link"
+                      onClick={() =>
+                        document
+                          .getElementById("staff-bill-panel")
+                          ?.scrollIntoView({ behavior: "smooth" })
+                      }
+                    >
+                      Xem món đang chọn (
+                      {cart.reduce((sum, item) => sum + item.soLuong, 0)})
                     </Button>
-                    <p className="small text-secondary mt-2 mb-0">Món mới sẽ được cộng vào hóa đơn hiện tại.</p>
                   </div>
-                </Tab>
-                <Tab eventKey="daGoi" title="Hóa đơn hiện tại">
-                  <div className="bill-items">
-                    <Button variant="outline-secondary" size="sm" className="mb-3"
-                      onClick={handleTaiHoaDon}>Cập nhật trạng thái</Button>
-                    {activeHoaDon.danhSachMon?.some(item => item.trangThaiMon === "choXacNhan") &&
-                      <Alert variant="warning">
-                        <p className="mb-2">Khách vừa gửi các món sau. Kiểm tra tên món, số lượng và ghi chú trước khi xác nhận:</p>
-                        <ul className="mb-3">
-                          {activeHoaDon.danhSachMon.filter(item => item.trangThaiMon === "choXacNhan").map(item => (
-                            <li key={item._id} className="mb-2">
-                              <strong>{item.ten}</strong> × {item.soLuong}
-                              {item.canNao === false && <span className="ms-2">(không cần chế biến)</span>}
-                              {item.ghiChu && <div className="small">Ghi chú: {item.ghiChu}</div>}
-                            </li>
-                          ))}
-                        </ul>
-                        <Button variant="dark" size="sm" onClick={handleDuyetMon}>Duyệt món</Button>
-                      </Alert>}
-                    <section className="staff-receipt">
-                      <header className="staff-receipt-heading">
-                        <div><span>HÓA ĐƠN HIỆN TẠI</span><strong>{activeBan?.ten}</strong></div>
-                        <small>Mã: {activeHoaDon._id ? String(activeHoaDon._id).slice(-8).toUpperCase() : "—"}</small>
-                      </header>
-                      {!activeHoaDon.danhSachMon?.length && <div className="empty-state"><p>Bàn chưa gọi món nào.</p></div>}
-                      {activeHoaDon.danhSachMon?.map(item => <div key={item._id} className="cart-item">
-                      <div className="d-flex justify-content-between gap-2">
-                        <strong>{item.ten}</strong><span>× {item.soLuong}</span>
-                      </div>
-                      <div className="d-flex justify-content-between gap-2 flex-wrap mt-2">
-                        <span>{Number(item.gia * item.soLuong).toLocaleString("vi-VN")} đ</span>
-                        <Badge bg={item.trangThaiMon === "daHuy" ? "danger-subtle" : "light"} text={item.trangThaiMon === "daHuy" ? "danger" : "dark"}>
-                          {tenTrangThaiMon[item.trangThaiMon] || item.trangThaiMon}
-                        </Badge>
-                      </div>
-                      {item.ghiChu && <p className="dish-note mt-2 mb-0">Ghi chú: {item.ghiChu}</p>}
-                      </div>)}
-                      <footer className="staff-receipt-total">
-                        <span>Tổng cộng · tạm tính</span>
-                        <strong>{tongTienHoaDon.toLocaleString("vi-VN")} đ</strong>
-                      </footer>
-                      <section className="staff-receipt-qr" aria-label="Mã QR thanh toán">
-                        <h3>Khách quét để chuyển khoản</h3>
-                        {qrThanhToan ? <>
-                          <img src={qrThanhToan} alt={`Mã QR chuyển ${tongTienHoaDon.toLocaleString("vi-VN")} đồng`} />
-                          <p>{tongTienHoaDon.toLocaleString("vi-VN")} đ · Nội dung {noiDungQr}</p>
-                          <div className="d-flex flex-wrap justify-content-center gap-2">
-                            <Button variant="outline-secondary" size="sm" onClick={() => setShowPaymentQrModal(true)}>
-                              Phóng to mã QR cho khách quét
-                            </Button>
-                            <Button variant="outline-dark" size="sm" onClick={handleYeuCauThanhToan}>
-                              Tải lại QR và hóa đơn
-                            </Button>
+                  <div className="menu-grid">
+                    {monHienThi.map((mon) => {
+                      const daChon =
+                        cart.find((item) => item.menuId === mon._id)?.soLuong ||
+                        0;
+                      return (
+                        <article
+                          key={mon._id}
+                          className={"menu-card" + (daChon ? " selected" : "")}
+                        >
+                          <div className="dish-image">
+                            <span>Chưa có ảnh</span>
+                            {mon.hinhAnh && (
+                              <img
+                                src={layUrlAnh(mon.hinhAnh)}
+                                alt={mon.ten}
+                                loading="lazy"
+                                onError={(e) => {
+                                  e.currentTarget.style.display = "none";
+                                }}
+                              />
+                            )}
+                            {daChon > 0 && (
+                              <span className="dish-count">
+                                Đã chọn {daChon}
+                              </span>
+                            )}
                           </div>
-                        </> : <p>Chưa cấu hình thông tin tài khoản nhận tiền.</p>}
-                      </section>
-                    </section>
+                          <div className="dish-content">
+                            <div className="dish-category">
+                              {mon.danhMucId?.ten ||
+                                danhMucList.find(
+                                  (dm) => dm._id === mon.danhMucId,
+                                )?.ten ||
+                                "Món ăn"}
+                            </div>
+                            <h3>{mon.ten}</h3>
+                            <div className="dish-bottom">
+                              <strong>
+                                {Number(mon.gia).toLocaleString("vi-VN")} đ
+                              </strong>
+                              <Button
+                                variant="outline-dark"
+                                size="sm"
+                                disabled={dangGuiMon || daChon >= 100}
+                                aria-label={"Thêm " + mon.ten}
+                                onClick={() => addToCart(mon)}
+                              >
+                                Thêm món
+                              </Button>
+                            </div>
+                          </div>
+                        </article>
+                      );
+                    })}
                   </div>
-                  <div className="bill-summary">
-                    <div className="d-flex gap-2">
-                      <Button variant="outline-secondary" disabled={dangGuiMon || cart.length > 0} onClick={handleOpenChuyenBan}>Chuyển bàn</Button>
-                      <Button variant="dark" className="flex-grow-1" disabled={dangGuiMon || cart.length > 0} onClick={handleThanhToan}>Xác nhận đã thu tiền</Button>
+                  {monHienThi.length === 0 && (
+                    <div className="empty-state">
+                      <h3>Không tìm thấy món</h3>
+                      <p>Thử tên khác hoặc chọn lại danh mục.</p>
                     </div>
-                    {cart.length > 0 && <p className="small text-secondary mt-2 mb-0">Gửi hoặc bỏ món đang chọn trước khi chuyển bàn, thanh toán.</p>}
-                  </div>
-                </Tab>
-              </Tabs>
-            </section>
-          </Modal.Body>
-        </>}
+                  )}
+                </section>
+              )}
+              <section
+                id="staff-bill-panel"
+                className="bill-panel"
+                aria-label="Món của bàn"
+              >
+                <Tabs
+                  activeKey={tabHoaDon}
+                  onSelect={(key) => key && setTabHoaDon(key)}
+                  className="bill-tabs"
+                >
+                  <Tab
+                    eventKey="orderMoi"
+                    title={
+                      "Đang chọn (" +
+                      cart.reduce((sum, item) => sum + item.soLuong, 0) +
+                      ")"
+                    }
+                  >
+                    <div className="bill-items">
+                      {cart.length === 0 ? (
+                        <div className="empty-state">
+                          <h3>Chưa chọn món</h3>
+                          <p>Bấm “Thêm món” trong thực đơn để gọi cho khách.</p>
+                        </div>
+                      ) : (
+                        cart.map((item) => (
+                          <div className="cart-item" key={item.menuId}>
+                            <div className="d-flex justify-content-between gap-3">
+                              <strong>{item.ten}</strong>
+                              <Button
+                                variant="link"
+                                className="text-danger p-0"
+                                disabled={dangGuiMon}
+                                aria-label={"Bỏ " + item.ten}
+                                onClick={() => {
+                                  setCart(
+                                    cart.filter(
+                                      (mon) => mon.menuId !== item.menuId,
+                                    ),
+                                  );
+                                  setGhiChuMon({
+                                    ...ghiChuMon,
+                                    [item.menuId]: "",
+                                  });
+                                }}
+                              >
+                                Bỏ
+                              </Button>
+                            </div>
+                            <div className="cart-item-price">
+                              <span>
+                                {Number(item.gia).toLocaleString("vi-VN")} đ /
+                                phần
+                              </span>
+                              <div className="quantity-control">
+                                <Button
+                                  variant="outline-secondary"
+                                  disabled={dangGuiMon}
+                                  aria-label={"Giảm số lượng " + item.ten}
+                                  onClick={() => changeQty(item.menuId, -1)}
+                                >
+                                  −
+                                </Button>
+                                <span aria-label="Số lượng">
+                                  {item.soLuong}
+                                </span>
+                                <Button
+                                  variant="outline-secondary"
+                                  disabled={dangGuiMon || item.soLuong >= 100}
+                                  aria-label={"Tăng số lượng " + item.ten}
+                                  onClick={() => changeQty(item.menuId, 1)}
+                                >
+                                  +
+                                </Button>
+                              </div>
+                            </div>
+                            <Form.Control
+                              aria-label={"Ghi chú cho " + item.ten}
+                              placeholder="Ghi chú: ít cay, không hành..."
+                              maxLength={500}
+                              disabled={dangGuiMon}
+                              value={ghiChuMon[item.menuId] || ""}
+                              onChange={(e) =>
+                                handleGhiChuChange(item.menuId, e.target.value)
+                              }
+                            />
+                            <div className="text-end small mt-2">
+                              {Number(item.gia * item.soLuong).toLocaleString(
+                                "vi-VN",
+                              )}{" "}
+                              đ
+                            </div>
+                          </div>
+                        ))
+                      )}
+                    </div>
+                    <div className="bill-summary">
+                      <div className="d-flex justify-content-between mb-3">
+                        <span>Tạm tính món mới</span>
+                        <strong>{tongMonMoi.toLocaleString("vi-VN")} đ</strong>
+                      </div>
+                      <Button
+                        variant="dark"
+                        className="w-100"
+                        disabled={!cart.length || dangGuiMon}
+                        onClick={handleGoiMon}
+                      >
+                        {dangGuiMon ? "Đang gửi món..." : "Gửi món"}
+                      </Button>
+                      <p className="small text-secondary mt-2 mb-0">
+                        Món mới sẽ được cộng vào hóa đơn hiện tại.
+                      </p>
+                    </div>
+                  </Tab>
+                  <Tab eventKey="daGoi" title="Hóa đơn hiện tại">
+                    <div className="bill-items">
+                      <Button
+                        variant="outline-secondary"
+                        size="sm"
+                        className="mb-3"
+                        onClick={handleTaiHoaDon}
+                      >
+                        Cập nhật trạng thái
+                      </Button>
+                      {activeHoaDon.danhSachMon?.some(
+                        (item) => item.trangThaiMon === "choXacNhan",
+                      ) && (
+                        <Alert variant="warning">
+                          <p className="mb-2">
+                            Khách vừa gửi các món sau. Kiểm tra tên món, số
+                            lượng và ghi chú trước khi xác nhận:
+                          </p>
+                          <ul className="mb-3">
+                            {activeHoaDon.danhSachMon
+                              .filter(
+                                (item) => item.trangThaiMon === "choXacNhan",
+                              )
+                              .map((item) => (
+                                <li key={item._id} className="mb-2">
+                                  <strong>{item.ten}</strong> × {item.soLuong}
+                                  {item.canNao === false && (
+                                    <span className="ms-2">
+                                      (không cần chế biến)
+                                    </span>
+                                  )}
+                                  {item.ghiChu && (
+                                    <div className="small">
+                                      Ghi chú: {item.ghiChu}
+                                    </div>
+                                  )}
+                                </li>
+                              ))}
+                          </ul>
+                          <Button
+                            variant="dark"
+                            size="sm"
+                            onClick={handleDuyetMon}
+                          >
+                            Duyệt món
+                          </Button>
+                        </Alert>
+                      )}
+                      <section className="staff-receipt">
+                        <header className="staff-receipt-heading">
+                          <div>
+                            <span>HÓA ĐƠN HIỆN TẠI</span>
+                            <strong>{activeBan?.ten}</strong>
+                          </div>
+                          <small>
+                            Mã:{" "}
+                            {activeHoaDon._id
+                              ? String(activeHoaDon._id).slice(-8).toUpperCase()
+                              : "—"}
+                          </small>
+                        </header>
+                        {!activeHoaDon.danhSachMon?.length && (
+                          <div className="empty-state">
+                            <p>Bàn chưa gọi món nào.</p>
+                          </div>
+                        )}
+                        {activeHoaDon.danhSachMon?.map((item) => (
+                          <div key={item._id} className="cart-item">
+                            <div className="d-flex justify-content-between gap-2">
+                              <strong>{item.ten}</strong>
+                              <span>× {item.soLuong}</span>
+                            </div>
+                            <div className="d-flex justify-content-between gap-2 flex-wrap mt-2">
+                              <span>
+                                {Number(item.gia * item.soLuong).toLocaleString(
+                                  "vi-VN",
+                                )}{" "}
+                                đ
+                              </span>
+                              <Badge
+                                bg={
+                                  item.trangThaiMon === "daHuy"
+                                    ? "danger-subtle"
+                                    : "light"
+                                }
+                                text={
+                                  item.trangThaiMon === "daHuy"
+                                    ? "danger"
+                                    : "dark"
+                                }
+                              >
+                                {tenTrangThaiMon[item.trangThaiMon] ||
+                                  item.trangThaiMon}
+                              </Badge>
+                            </div>
+                            {item.ghiChu && (
+                              <p className="dish-note mt-2 mb-0">
+                                Ghi chú: {item.ghiChu}
+                              </p>
+                            )}
+                          </div>
+                        ))}
+                        <footer className="staff-receipt-total">
+                          <span>Tổng cộng · tạm tính</span>
+                          <strong>
+                            {tongTienHoaDon.toLocaleString("vi-VN")} đ
+                          </strong>
+                        </footer>
+                        {activeHoaDon.trangThaiThanhToan === "choThanhToan" && (
+                          <section
+                            className="staff-receipt-qr"
+                            aria-label="Mã QR thanh toán"
+                          >
+                            <h3>
+                              Hóa đơn đã chốt · khách quét để chuyển khoản
+                            </h3>
+                            {qrThanhToan ? (
+                              <>
+                                <img
+                                  src={qrThanhToan}
+                                  alt={`Mã QR chuyển ${soTienThanhToan.toLocaleString("vi-VN")} đồng`}
+                                />
+                                <p>
+                                  {soTienThanhToan.toLocaleString("vi-VN")} đ ·
+                                  Nội dung {noiDungQr}
+                                </p>
+                                <div className="d-flex flex-wrap justify-content-center gap-2">
+                                  <Button
+                                    variant="outline-secondary"
+                                    size="sm"
+                                    onClick={() => setShowPaymentQrModal(true)}
+                                  >
+                                    Phóng to mã QR cho khách quét
+                                  </Button>
+                                  <Button
+                                    variant="outline-dark"
+                                    size="sm"
+                                    onClick={handleYeuCauThanhToan}
+                                  >
+                                    Tải lại QR và hóa đơn
+                                  </Button>
+                                </div>
+                              </>
+                            ) : (
+                              <p>
+                                Chưa cấu hình thông tin tài khoản nhận tiền.
+                              </p>
+                            )}
+                          </section>
+                        )}
+                      </section>
+                    </div>
+                    <div className="bill-summary">
+                      {activeHoaDon.trangThaiThanhToan === "choChot" && (
+                        <p className="small text-secondary mb-2">
+                          Khách đang chờ nhân viên kiểm tra và chốt hóa đơn tại
+                          mục Yêu cầu hỗ trợ.
+                        </p>
+                      )}
+                      <div className="d-flex gap-2">
+                        <Button
+                          variant="outline-secondary"
+                          disabled={dangGuiMon || cart.length > 0}
+                          onClick={handleOpenChuyenBan}
+                        >
+                          Chuyển bàn
+                        </Button>
+                        <Button
+                          variant="dark"
+                          className="flex-grow-1"
+                          disabled={
+                            dangGuiMon ||
+                            cart.length > 0 ||
+                            activeHoaDon.trangThaiThanhToan === "choChot"
+                          }
+                          onClick={handleThanhToan}
+                        >
+                          Xác nhận đã thu tiền
+                        </Button>
+                      </div>
+                      {cart.length > 0 && (
+                        <p className="small text-secondary mt-2 mb-0">
+                          Gửi hoặc bỏ món đang chọn trước khi chuyển bàn, thanh
+                          toán.
+                        </p>
+                      )}
+                    </div>
+                  </Tab>
+                </Tabs>
+              </section>
+            </Modal.Body>
+          </>
+        )}
       </Modal>
 
-      <Modal show={showPaymentQrModal} onHide={() => setShowPaymentQrModal(false)} centered>
+      <Modal
+        show={showPaymentQrModal}
+        onHide={() => setShowPaymentQrModal(false)}
+        centered
+      >
         <Modal.Header closeButton>
           <Modal.Title>Mã QR thanh toán · {activeBan?.ten}</Modal.Title>
         </Modal.Header>
         <Modal.Body className="staff-payment-qr-modal">
-          {qrThanhToan ? <>
-            <img src={qrThanhToan} alt={`Mã QR chuyển ${tongTienHoaDon.toLocaleString("vi-VN")} đồng`} />
-            <strong>{tongTienHoaDon.toLocaleString("vi-VN")} đ</strong>
-            <p>Nội dung chuyển khoản: {noiDungQr}</p>
-            <small>Sau khi khách chuyển khoản, xác nhận đã nhận tiền để kết thúc hóa đơn.</small>
-          </> : <p>Chưa cấu hình thông tin tài khoản nhận tiền.</p>}
+          {qrThanhToan ? (
+            <>
+              <img
+                src={qrThanhToan}
+                alt={`Mã QR chuyển ${tongTienHoaDon.toLocaleString("vi-VN")} đồng`}
+              />
+              <strong>{tongTienHoaDon.toLocaleString("vi-VN")} đ</strong>
+              <p>Nội dung chuyển khoản: {noiDungQr}</p>
+              <small>
+                Sau khi khách chuyển khoản, xác nhận đã nhận tiền để kết thúc
+                hóa đơn.
+              </small>
+            </>
+          ) : (
+            <p>Chưa cấu hình thông tin tài khoản nhận tiền.</p>
+          )}
         </Modal.Body>
       </Modal>
 
@@ -709,6 +1060,3 @@ export default function PhucVu({ soDoBanVersion = 0, refreshSoDoBan }) {
     </div>
   );
 }
-
-
-

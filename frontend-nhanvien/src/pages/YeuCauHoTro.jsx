@@ -19,8 +19,8 @@ const layUrlQrThanhToan = (hoaDon, cauHinh) => {
   const maNganHang = cauHinh?.maNganHang;
   const soTaiKhoan = cauHinh?.soTaiKhoan;
   const tenChuTaiKhoan = cauHinh?.tenChuTaiKhoan;
-  const tongTien = Number(hoaDon?.tongTien || 0);
-  if (!maNganHang || !soTaiKhoan || !tenChuTaiKhoan || tongTien <= 0 || !hoaDon?._id) return "";
+  const tongTien = Number(hoaDon?.soTienThanhToan || 0);
+  if (hoaDon?.trangThaiThanhToan !== "choThanhToan" || !maNganHang || !soTaiKhoan || !tenChuTaiKhoan || tongTien <= 0 || !hoaDon?._id) return "";
 
   const noiDung = `HD${String(hoaDon._id).slice(-8).toUpperCase()}`;
   return `https://img.vietqr.io/image/${encodeURIComponent(maNganHang)}-${encodeURIComponent(soTaiKhoan)}-compact2.png?amount=${encodeURIComponent(tongTien)}&addInfo=${encodeURIComponent(noiDung)}&accountName=${encodeURIComponent(tenChuTaiKhoan)}`;
@@ -60,8 +60,14 @@ export default function YeuCauHoTro() {
       setDangXuLyId(id);
       setLoi("");
       await xac_nhan_hotro_service(id, ketQua);
-      setDanhSach((hienTai) => hienTai.filter((item) => item._id !== id));
-      setThongBao(yeuCau?.loaiYeuCau === "thanhToan" && ketQua === "chapNhan"
+      if (yeuCau?.loaiYeuCau === "thanhToan" && ketQua === "chotDon") {
+        await taiDanhSach();
+      } else {
+        setDanhSach((hienTai) => hienTai.filter((item) => item._id !== id));
+      }
+      setThongBao(yeuCau?.loaiYeuCau === "thanhToan" && ketQua === "chotDon"
+        ? "Đã chốt hóa đơn và tạo mã QR. Chờ khách chuyển khoản rồi xác nhận đã nhận tiền."
+        : yeuCau?.loaiYeuCau === "thanhToan" && ketQua === "chapNhan"
         ? "Đã xác nhận thanh toán; bàn đã chuyển về trạng thái trống."
         : yeuCau?.loaiYeuCau === "thanhToan"
           ? "Đã đóng yêu cầu; hóa đơn vẫn chưa thanh toán."
@@ -78,7 +84,7 @@ export default function YeuCauHoTro() {
   };
 
   const qrDangMo = layUrlQrThanhToan(yeuCauQr?.hoaDonId, cauHinhThanhToan);
-  const tongTienQr = Number(yeuCauQr?.hoaDonId?.tongTien || 0);
+  const tongTienQr = Number(yeuCauQr?.hoaDonId?.soTienThanhToan || 0);
   const maHoaDonQr = yeuCauQr?.hoaDonId?._id
     ? `HD${String(yeuCauQr.hoaDonId._id).slice(-8).toUpperCase()}`
     : "";
@@ -115,7 +121,9 @@ export default function YeuCauHoTro() {
                 <div>
                   <div className="d-flex align-items-center gap-2 flex-wrap mb-2">
                     <h2 className="h5 mb-0">Bàn {item.banId?.ten || "không rõ"}</h2>
-                    <Badge bg="warning" text="dark">Đang chờ</Badge>
+                    <Badge bg={item.trangThai === "dangXuLy" ? "info" : "warning"} text="dark">
+                      {item.trangThai === "dangXuLy" ? "Đã chốt · chờ thanh toán" : "Đang chờ"}
+                    </Badge>
                     <Badge bg="light" text="dark" className="border">
                       {tenLoaiYeuCau[item.loaiYeuCau] || item.loaiYeuCau}
                     </Badge>
@@ -141,12 +149,14 @@ export default function YeuCauHoTro() {
                       <span>Tổng cộng</span>
                       <strong>{Number(item.hoaDonId?.tongTien || 0).toLocaleString("vi-VN")}đ</strong>
                     </div>
-                    {layUrlQrThanhToan(item.hoaDonId, cauHinhThanhToan) ? <div className="support-payment-qr">
-                      <img src={layUrlQrThanhToan(item.hoaDonId, cauHinhThanhToan)} alt={`Mã QR thanh toán ${Number(item.hoaDonId?.tongTien || 0).toLocaleString("vi-VN")} đồng`} />
+                    {item.trangThai === "dangXuLy" && layUrlQrThanhToan(item.hoaDonId, cauHinhThanhToan) ? <div className="support-payment-qr">
+                      <img src={layUrlQrThanhToan(item.hoaDonId, cauHinhThanhToan)} alt={`Mã QR thanh toán ${Number(item.hoaDonId?.soTienThanhToan || 0).toLocaleString("vi-VN")} đồng`} />
                       <Button variant="outline-secondary" size="sm" onClick={() => setYeuCauQr(item)}>
                         Phóng to mã QR cho khách quét
                       </Button>
-                    </div> : <p className="small text-secondary mb-0">Chưa có mã QR thanh toán.</p>}
+                    </div> : item.trangThai === "dangXuLy"
+                      ? <p className="small text-secondary mb-0">Hóa đơn đã chốt nhưng chưa tạo được mã QR. Vui lòng kiểm tra cấu hình nhận tiền.</p>
+                      : <p className="small text-secondary mb-0">Kiểm tra hóa đơn rồi chốt để tạo mã QR thanh toán.</p>}
                   </section>}
                   <div className="small text-secondary">
                     Gửi lúc: {item.createdAt ? new Date(item.createdAt).toLocaleString("vi-VN") : "Không rõ"}
@@ -161,8 +171,14 @@ export default function YeuCauHoTro() {
                       Từ chối
                     </Button>
                   </> : item.loaiYeuCau === "thanhToan" ? <>
-                    <Button variant="success" disabled={dangXuLyId === item._id} onClick={() => hoanTatYeuCau(item._id, "chapNhan")}>Xác nhận đã thu tiền</Button>
-                    <Button variant="outline-secondary" disabled={dangXuLyId === item._id} onClick={() => hoanTatYeuCau(item._id, "tuChoi")}>Đóng yêu cầu</Button>
+                    {item.trangThai === "choXuLy" ? <Button variant="dark" disabled={dangXuLyId === item._id} onClick={() => hoanTatYeuCau(item._id, "chotDon")}>
+                      {dangXuLyId === item._id ? "Đang chốt..." : "Chốt hóa đơn và gửi QR"}
+                    </Button> : <Button variant="success" disabled={dangXuLyId === item._id} onClick={() => hoanTatYeuCau(item._id, "chapNhan")}>
+                      {dangXuLyId === item._id ? "Đang cập nhật..." : "Xác nhận đã nhận tiền"}
+                    </Button>}
+                    <Button variant="outline-secondary" disabled={dangXuLyId === item._id} onClick={() => hoanTatYeuCau(item._id, "tuChoi")}>
+                      {item.trangThai === "choXuLy" ? "Đóng yêu cầu" : "Hủy chốt hóa đơn"}
+                    </Button>
                   </> : <Button
                     variant="success"
                     disabled={dangXuLyId === item._id}

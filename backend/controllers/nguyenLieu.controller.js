@@ -69,7 +69,7 @@ exports.create = async (req, res) => {
 exports.update = async (req, res) => {
   try {
     const p = await NguyenLieu.findByIdAndUpdate(req.params.id, req.body, {
-      new: true,
+      returnDocument: "after",
       runValidators: true,
     });
     if (p) res.json(p);
@@ -100,7 +100,7 @@ exports.nhapKho = async (req, res) => {
     const p = await NguyenLieu.findByIdAndUpdate(
       id,
       { $inc: { soLuongTon: Number(soLuongThem) } },
-      { new: true },
+      { returnDocument: "after" },
     );
     if (p) res.json(p);
     else res.status(404).json({ message: "Không tìm thấy nguyên liệu" });

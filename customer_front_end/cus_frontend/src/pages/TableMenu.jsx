@@ -42,6 +42,8 @@ function TableMenu({ banId }) {
       _id: data?._id || data?.hoaDonId,
       danhSachMon: data?.danhSachMonDaGoi || data?.danhSachMon || [],
       tongTien: data?.tongTienTamTinh ?? data?.tongTien ?? 0,
+      trangThaiThanhToan: data?.trangThaiThanhToan || "chuaYeuCau",
+      soTienThanhToan: data?.soTienThanhToan ?? null,
       danhSachYeuCauTraMon: data?.danhSachYeuCauTraMon || [],
       danhSachYeuCauThanhToan: data?.danhSachYeuCauThanhToan || [],
     });

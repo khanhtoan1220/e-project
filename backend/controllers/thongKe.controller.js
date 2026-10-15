@@ -73,7 +73,6 @@ exports.getCanhBaoKho = async (req, res) => {
   }
 };
 
-// Alias để tránh nhầm lẫn tên hàm giữa các file
 exports.getDoanhThu = exports.getDoanhThuChung;
 exports.getMonBanChay = exports.getXepHangMon;
 exports.getTonKhoThap = exports.getCanhBaoKho;

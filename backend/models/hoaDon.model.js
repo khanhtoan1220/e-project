@@ -51,6 +51,12 @@ const hoaDonSchema = new mongoose.Schema(
     },
     danhSachMon: [chiTietHoaDonSchema],
     tongTien: { type: Number, default: 0 },
+    trangThaiThanhToan: {
+      type: String,
+      enum: ["chuaYeuCau", "choChot", "choThanhToan", "daThanhToan"],
+      default: "chuaYeuCau",
+    },
+    soTienThanhToan: { type: Number, min: 0 },
     thoiGianVao: { type: Date, default: Date.now },
     thoiGianRa: Date,
   },

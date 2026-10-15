@@ -171,7 +171,7 @@ exports.resetMatKhau = async (req, res) => {
     const user = await NguoiDung.findByIdAndUpdate(
       id,
       { matKhau: hashed },
-      { new: true },
+      { returnDocument: "after" },
     );
     if (!user) {
       return res.status(404).json({ message: "Không tìm thấy nhân viên" });
